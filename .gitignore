@@ -1,0 +1,55 @@
+# === Python ===
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+
+# Virtual environments
+venv/
+.venv/
+env/
+.env/
+*.env
+
+# === Package files ===
+*.egg-info/
+dist/
+build/
+
+# === VSCode / Editor ===
+.vscode/
+*.code-workspace
+
+# === OS-generated files ===
+.DS_Store       # macOS
+Thumbs.db       # Windows
+
+# === Docker / Dev Containers ===
+*.log
+*.pid
+*.pid.lock
+docker-compose.override.yml
+.devcontainer/
+devcontainer.json
+.env.local
+.env.dev
+.env.production
+.envrc
+
+# === Testing / Coverage ===
+htmlcov/
+.tox/
+.coverage
+*.cover
+coverage.xml
+nosetests.xml
+.pytest_cache/
+
+# === Git conflict files ===
+*.orig
+
+# === Editor backup files ===
+*~
+*.swp
+*.tmp
