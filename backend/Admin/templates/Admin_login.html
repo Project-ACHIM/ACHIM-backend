@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>運営ログイン</title>
+    <!-- Flaskでstaticファイルを読み込む -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='Admin_login.css') }}">
+    <script defer src="{{ url_for('static', filename='Admin_login.js') }}"></script>
+</head>
+<body>
+    <div class="login-container">
+        <h2>運営ログイン</h2>
+
+        <!-- Flashメッセージ（ログイン失敗時） -->
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <ul>
+                    {% for message in messages %}
+                        <li style="color:red;">{{ message }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        {% endwith %}
+
+        <form action="/" method="post">
+            <label for="company-code">管理者コード</label>
+            <input type="text" id="company-code" name="company_code" required>
+
+            <label for="password">パスワード</label>
+            <input type="password" id="password" name="password" required>
+
+            <button type="submit">ログイン</button>
+        </form>
+
+        <div class="footer">© 2025 株式会社ACHIM</div>
+    </div>
+</body>
+</html>
