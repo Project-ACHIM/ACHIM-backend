@@ -8,3 +8,4 @@ services:
       - ./backend:/app
     environment:
       - PYTHONUNBUFFERED=1
+      
