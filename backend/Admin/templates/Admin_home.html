@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>管理者ホーム</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='Admin_home.css') }}">
+    <script defer src="{{ url_for('static', filename='Admin_home.js') }}"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>クーポン設定</h1>
+        <form>
+            <label for="name">クーポン名</label>
+            <input type="text" id="name" placeholder="例：春の割引クーポン">
+
+            <label for="discount">割引額</label>
+            <input type="text" id="discount" placeholder="例：500円 または 10%">
+
+            <label for="code">クーポンコード</label>
+            <input type="text" id="code" placeholder="例：SPRING2025">
+
+            <label for="limit">使用回数上限</label>
+            <input type="number" id="limit" placeholder="例：100">
+
+            <label for="expiry">有効期限</label>
+            <input type="date" id="expiry">
+
+            <button type="submit">保存する</button>
+        </form>
+    </div>
+</body>
+</html>
