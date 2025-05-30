@@ -1,0 +1,55 @@
+# === Python bytecode ===
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# === Virtual environments ===
+.venv/
+venv/
+env/
+env.bak/
+
+# === Direnv ===
+.envrc
+
+# === Environment files ===
+.env
+.env.*
+.env.local
+.env.dev
+.env.production
+
+# === Packaging / build artifacts ===
+build/
+dist/
+*.egg-info/
+pip-wheel-metadata/
+
+# === Type checking cache ===
+.mypy_cache/
+
+# === Testing / Coverage ===
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+
+# === VS Code ===
+.vscode/
+*.code-workspace
+
+# === JetBrains IDEs ===
+.idea/
+
+# === OS-generated files ===
+.DS_Store
+Thumbs.db
+
+# === Docker / Compose ===
+docker-compose.override.yml
+
+# ログ・一時ファイルは専用ディレクトリ配下のみ無視
+logs/*.log
+tmp/*.pid
+tmp/*.pid.lock
