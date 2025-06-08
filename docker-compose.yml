@@ -6,6 +6,11 @@ services:
       - "8000:8000"
     volumes:
       - ./backend:/app
-    environment:
-      - PYTHONUNBUFFERED=1
-      
+    env_file:
+      - .env
+    networks:
+      - achim-network
+
+networks:
+  achim-network:
+    external: true
