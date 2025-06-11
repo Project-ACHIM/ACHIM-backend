@@ -1,4 +1,5 @@
 services:
+
   api:
     build:
       context: .
@@ -8,9 +9,25 @@ services:
       - ./backend:/app
     env_file:
       - .env
+    depends_on:
+      - db
+    networks:
+      - achim-network
+
+  db:
+    image: postgres
+    ports:
+      - "5432:5432"
+    env_file:
+      - db.env
+    volumes:
+      - pgdata:/var/lib/postgresql/data
     networks:
       - achim-network
 
 networks:
   achim-network:
-    external: true
+    driver: bridge
+
+volumes:
+  pgdata:

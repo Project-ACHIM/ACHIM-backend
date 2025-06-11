@@ -16,11 +16,7 @@ env.bak/
 
 # === Environment files ===
 .env
-.env.*
-!.env.example
-.env.local
-.env.dev
-.env.production
+*.env
 
 # === Packaging / build artifacts ===
 build/
