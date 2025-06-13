@@ -1,3 +1,5 @@
+version: "3.9"
+
 services:
   api:
     build:
@@ -5,12 +7,30 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./backend:/app
+      - .:/workspace
+    working_dir: /workspace/backend
     env_file:
       - .env
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    depends_on:
+      - db
+    networks:
+      - achim-network
+
+  db:
+    image: postgres
+    ports:
+      - "5432:5432"
+    env_file:
+      - db.env
+    volumes:
+      - pgdata:/var/lib/postgresql/data
     networks:
       - achim-network
 
 networks:
   achim-network:
-    external: true
+    driver: bridge
+
+volumes:
+  pgdata:
