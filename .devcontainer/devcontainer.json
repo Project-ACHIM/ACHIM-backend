@@ -4,8 +4,8 @@
     "../docker-compose.yml"
   ],
   "service": "api",
-  "workspaceFolder": "/workspace/backend",
-  "postCreateCommand": "pip install -r ../requirements.txt",
+  "workspaceFolder": "/workspace",                      // 👈 backendではなく /workspace に変更
+  "postCreateCommand": "pip install -r requirements.txt", // 👈 requirements.txt は /workspace にある前提に変更
   "forwardPorts": [8000],
   "remoteUser": "root",
   "settings": {
