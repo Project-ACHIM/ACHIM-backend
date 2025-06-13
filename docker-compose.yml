@@ -1,14 +1,17 @@
-services:
+version: "3.9"
 
+services:
   api:
     build:
       context: .
     ports:
       - "8000:8000"
     volumes:
-      - ./backend:/app
+      - .:/workspace
+    working_dir: /workspace/backend
     env_file:
       - .env
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
     depends_on:
       - db
     networks:

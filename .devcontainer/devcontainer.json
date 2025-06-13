@@ -1,23 +1,18 @@
-
 {
   "name": "FastAPI DevContainer",
-  "build": {
-    "dockerfile": "../Dockerfile",
-    "context": ".."
-  },
+  "dockerComposeFile": [
+    "../docker-compose.yml"
+  ],
+  "service": "api",
+  "workspaceFolder": "/workspace/backend",
+  "postCreateCommand": "pip install -r ../requirements.txt",
+  "forwardPorts": [8000],
+  "remoteUser": "root",
   "settings": {
     "terminal.integrated.defaultProfile.linux": "bash"
   },
   "extensions": [
     "ms-python.python",
-    "ms-python.vscode-pylance",
-    "eamodio.gitlens",
-    "github.vscode-pull-request-github"
-  ],
-  "forwardPorts": [8000],
-  "postCreateCommand": "pip install -r requirements.txt",
-  "remoteUser": "root",
-  "mounts": [
-    "source=${env:HOME}/.ssh,target=/root/.ssh,type=bind"
+    "ms-python.vscode-pylance"
   ]
 }
