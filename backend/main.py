@@ -2,6 +2,7 @@ from fastapi import FastAPI, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from db.session import get_db
+from api import auth_google
 
 app = FastAPI()
 
