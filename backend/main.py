@@ -1,16 +1,25 @@
+
 from fastapi import FastAPI, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from db.session import get_db
 from api import auth_google
+from api.auth import mail
+from api import users
+
 
 app = FastAPI()
 
-@app.get("/")
-def read_root():
-    return {"message": "Hello, zai"}
+app.include_router(mail.router, prefix="/auth/mail", tags=["auth:mail"])
+app.include_router(users.router, prefix="/users", tags=["users"])
 
-@app.get("/test-db")
-def test_db_connection(db: Session = Depends(get_db)):
-    result = db.execute(text("SELECT 1")).scalar()
-    return {"message": "DB接続成功" if result == 1 else "DB接続失敗"}
+
+
+# ひとまずテーブルを作るための処理
+from db.session import engine
+from db.models.common import Base  # モデル全体が登録されたBase
+
+print("テーブル作成開始")
+Base.metadata.create_all(bind=engine)
+print("テーブル作成完了")
+
