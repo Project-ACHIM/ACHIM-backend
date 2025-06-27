@@ -10,7 +10,9 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     UniqueConstraint,
-    JSON
+    TIMESTAMP,
+    JSON,
+    JSONB
 )
 
 # ORM用（リレーション）
@@ -32,7 +34,9 @@ __all__ = [
     "DateTime",
     "ForeignKey",
     "UniqueConstraint",
+    "TIMESTAMP",
     "JSON",
+    "JSONB",
     "relationship",
     "func",
     "Base"
