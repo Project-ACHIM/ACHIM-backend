@@ -1,4 +1,4 @@
-from db.models.common import *
+from backend.db.models.common import *
 
 # --- users ---
 class User(Base):
@@ -13,8 +13,7 @@ class User(Base):
     # relation
     auth_providers = relationship("AuthProvider", back_populates="user")
     sp_records = relationship("SPRecord", back_populates="user")
-    bp_entries = relationship("BPEntry", back_populates="user")
+    bp_entries = relationship("BpEntry", back_populates="user")
     group_memberships = relationship("GroupMember", back_populates="user")
     mission_results = relationship("MissionResult", back_populates="user")
     ranking_results = relationship("RankingResult", back_populates="user", cascade="all, delete-orphan")
-
