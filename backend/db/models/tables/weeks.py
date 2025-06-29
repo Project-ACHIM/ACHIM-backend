@@ -1,4 +1,4 @@
-from db.models.common import *
+from backend.db.models.common import *
 
 
 class Week(Base):
@@ -10,5 +10,7 @@ class Week(Base):
     status = Column(String(20), default='scheduled')
     created_at = Column(TIMESTAMP, server_default=func.now())
     updated_at = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now())
+
+    groups = relationship("Group", back_populates="week", cascade="all, delete-orphan")
 
     ranking_results = relationship("RankingResult", back_populates="week", cascade="all, delete-orphan")
