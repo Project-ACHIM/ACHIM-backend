@@ -4,11 +4,20 @@ from backend.api import users
 from backend.db.base import Base
 from backend.db.session import engine
 from backend.db import models  # モデル定義の読み込み
+from backend.api import auth_google
+
+
+# from fastapi import FastAPI, Depends
+# from sqlalchemy.orm import Session
+# from sqlalchemy import text
+# from db.session import get_db
+# from api import auth_google
+# from api.auth import mail
+# from api import users
 
 import logging
 
 logging.basicConfig(level=logging.DEBUG)
-
 
 app = FastAPI()
 
