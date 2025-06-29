@@ -1,4 +1,4 @@
-from db.models.common import *
+from backend.db.models.common import *
 
 class MissionResult(Base):
     __tablename__ = 'mission_results'
