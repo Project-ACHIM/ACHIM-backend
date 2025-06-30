@@ -1,13 +1,14 @@
+# models/group_ranking_view.py
+
 from db.models.common import *
 
 class GroupRankingView(Base):
-    __table__ = Table(
-        "group_ranking_view",
-        metadata,
-        Column("group_id", Integer, primary_key=True),
-        Column("user_id", Integer, primary_key=True),
-        Column("user_name", String),
-        Column("total_sp", Integer),
-        Column("rank", Integer),
-        autoload_with=engine
-    )
+    __tablename__ = 'group_ranking_view'
+    __table_args__ = {'extend_existing': True}
+    __mapper_args__ = {'primary_key': ['group_id', 'user_id']}
+
+    group_id = Column(Integer)
+    user_id = Column(Integer)
+    user_name = Column(String)
+    total_sp = Column(Integer)
+    rank = Column(Integer)
