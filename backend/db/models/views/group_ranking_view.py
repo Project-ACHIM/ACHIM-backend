@@ -1,6 +1,7 @@
 # models/group_ranking_view.py
 
-from db.models.common import *
+from backend.db.models.common import *
+
 
 class GroupRankingView(Base):
     __tablename__ = 'group_ranking_view'

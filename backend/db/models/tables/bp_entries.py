@@ -1,4 +1,4 @@
-from db.models.common import *
+from backend.db.models.common import *
 
 class BpEntry(Base):
     __tablename__ = 'bp_entries'
