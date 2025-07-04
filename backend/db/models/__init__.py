@@ -1,6 +1,7 @@
 # db/models/__init__.py
 
 # 各モデルファイルをimport（使わなくてもimportだけすればOK）
+from backend.db.models.tables.regions import Region #追記
 from backend.db.models.tables.users import User
 from backend.db.models.tables.groups import Group
 from backend.db.models.tables.auth_providers import AuthProvider
