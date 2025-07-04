@@ -5,7 +5,7 @@ from backend.db.base import Base
 from backend.db.session import engine
 from backend.db import models  # モデル定義の読み込み
 from backend.api import auth_google
-
+from backend.db.seed import seed_regions
 
 # from fastapi import FastAPI, Depends
 # from sqlalchemy.orm import Session
@@ -27,4 +27,5 @@ app.include_router(users.router, prefix="/users", tags=["users"])
 # ひとまずテーブルを作るための処理
 print("テーブル作成開始")
 Base.metadata.create_all(bind=engine)
+seed_regions()
 print("テーブル作成完了")
