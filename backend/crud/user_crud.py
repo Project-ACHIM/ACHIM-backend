@@ -12,18 +12,17 @@ def get_user_by_email(db: Session, email: str):
     ).first()
 
 def create_user(db: Session, email: str, hashed_password: str):
-    user = User()
+    user = User(region_id=999)  # 初期は未設定
     db.add(user)
     db.commit()
     db.refresh(user)
 
-    # email認証
     auth_provider = AuthProvider(
-        user_id = user.id,
-        provider = "email",
-        provider_user_id = email,
-        email = email,
-        password_hash = hashed_password
+        user_id=user.id,
+        provider="email",
+        provider_user_id=email,
+        email=email,
+        password_hash=hashed_password
     )
 
     db.add(auth_provider)
