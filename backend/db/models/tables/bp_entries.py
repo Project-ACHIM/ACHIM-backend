@@ -17,4 +17,3 @@ class BpEntry(Base):
     # Optional: リレーション（必要に応じて）
     user = relationship("User", back_populates="bp_entries")
     group = relationship("Group", back_populates="bp_entries")
-    group = relationship("Group", back_populates="members")
