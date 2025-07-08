@@ -25,4 +25,6 @@ class User(Base):
     group_memberships = relationship("GroupMember", back_populates="user")
     mission_results = relationship("MissionResult", back_populates="user")
     ranking_results = relationship("RankingResult", back_populates="user", cascade="all, delete-orphan")
+    week_preferences = relationship("UserWeekPreference", back_populates="user", cascade="all, delete-orphan")
     region = relationship("Region", back_populates="users")
+
