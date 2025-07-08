@@ -2,10 +2,12 @@
 
 # SQLAlchemy Core 型や制約
 from sqlalchemy import (
+    Boolean,
     Column,
     Integer,
     String,
     Text,
+    Time,
     Date,
     DateTime,
     ForeignKey,
@@ -27,10 +29,12 @@ from backend.db.base import Base
 
 # このファイルからインポート可能なシンボルを明示（import * を防ぐ）
 __all__ = [
+    "Boolean",
     "Column",
     "Integer",
     "String",
     "Text",
+    "Time",
     "Date",
     "DateTime",
     "ForeignKey",
