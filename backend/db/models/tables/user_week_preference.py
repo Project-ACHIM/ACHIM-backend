@@ -6,7 +6,7 @@ class UserWeekPreference(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     week_id = Column(Integer, ForeignKey("weeks.id"), nullable=False)
-    genre = Column(String(20), nullable=False)
+    category = Column(String(20), nullable=False)
     created_at = Column(TIMESTAMP, server_default=func.now())
 
     __table_args__ = (
