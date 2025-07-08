@@ -1,4 +1,4 @@
-# services/weekly_tasks.py
+# service/weekly_tasks.py
 
 from datetime import datetime
 from sqlalchemy.orm import Session

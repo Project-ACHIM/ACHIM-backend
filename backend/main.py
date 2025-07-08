@@ -5,6 +5,7 @@ from backend.db.base import Base
 from backend.db.session import engine
 from backend.db import models  # モデル定義の読み込み
 from backend.api import auth_google
+from backend.service.monthly_tasks import generate_next_month_weeks
 from backend.service.weekly_tasks import run_weekly_tasks
 from apscheduler.schedulers.background import BackgroundScheduler
 import logging
@@ -15,10 +16,11 @@ logging.basicConfig(level=logging.DEBUG)
 
 # ----自動実行(schedular)の設定---------------
 weekly_scheduler = BackgroundScheduler() # インスタンス生成
+monthly_scheduler = BackgroundScheduler()
 
 weekly_scheduler.add_job(run_weekly_tasks, 'cron', day_of_week='mon', hour=0, minute=10) # 毎週月曜0:10に実行
+monthly_scheduler.add_job(generate_next_month_weeks, 'cron', day=1, hour=3, minute=0) # 毎月1日3:00に実行
 
-weekly_scheduler.start() # スケジューラー起動
 
 # -------------------------------------------
 
@@ -31,12 +33,14 @@ async def lifespan(app: FastAPI):
     # 起動時の処理
     print("スケジューラ開始")
     weekly_scheduler.start()
+    monthly_scheduler.start()
     
     yield  # アプリが動いている間ここで止まる
 
     # シャットダウン時の処理
     print("スケジューラ停止")
     weekly_scheduler.shutdown()
+    monthly_scheduler.shutdown()
     
 
 # FastAPI アプリに lifespan を登録

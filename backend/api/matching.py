@@ -55,7 +55,7 @@ def match_users_to_groups(db: Session, week: Week):
 
             group = Group(week_id=week.id, category=category)
             db.add(group)
-            db.flush()  # group.id取得のため
+            db.flush()  # 下記のgroup.id取得のため
 
             for user in users[i:i+size]: # i ~ i+sizeの間でグループ化
                 member = GroupMember(user_id=user.id, group_id=group.id)
