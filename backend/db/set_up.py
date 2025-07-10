@@ -1,3 +1,5 @@
+from datetime import date, timedelta
+from backend.db.models.tables.weeks import Week
 from backend.db.session import SessionLocal
 from backend.db.models.tables.regions import Region
 
@@ -51,9 +53,9 @@ regions = [
     {"id": 46, "name": "鹿児島県", "code": "46", "area_group": "九州地方"},
     {"id": 47, "name": "沖縄県", "code": "47", "area_group": "沖縄地方"},
 ]
-
-def seed_regions():
-    db = SessionLocal()
+db = SessionLocal()
+def setUp_regions():
+    
     if db.query(Region).count() == 0:
         for r in regions:
             db.add(Region(id=r["id"], name=r["name"], code=r["code"], area_group=r["area_group"]))
@@ -62,3 +64,69 @@ def seed_regions():
     else:
         print("地域データは既に存在します")
     db.close()
+
+# activeの週を挿入
+def insert_active_week(db):
+    today = date.today()
+
+    # 今週の active week
+    active_start = today - timedelta(days=today.weekday())  # 今週の月曜
+    active_end = active_start + timedelta(days=6)
+
+    active_week = Week(
+        start_date=active_start,
+        end_date=active_end,
+        status='active'
+    )
+
+    db.add(active_week)
+    db.commit()
+    print("activeの週を登録しました。")
+
+    return active_week
+
+
+# 指定月の月曜始まり週を返す(開始日と終了日)
+def get_month_weeks(year: int, month: int):
+    
+    first_day = date(year, month, 1)
+    next_month = (month % 12) + 1
+    next_month_year = year + (month // 12)
+    last_day = date(next_month_year, next_month, 1) - timedelta(days=1)
+
+    current = first_day
+    weeks = []
+
+    while current <= last_day:
+        if current.weekday() == 0:  # 月曜日
+            start = current
+            end = start + timedelta(days=6)
+            weeks.append((start, end))
+        current += timedelta(days=1)
+
+    return weeks
+
+# weeksテーブルが空なら、今月・翌月分のscheduled weekを登録
+def init_weeks_if_empty(db):
+    
+    week_count = db.query(Week).count()
+    if week_count > 0:
+        return  # すでに存在している場合は何もしない
+
+    today = date.today()
+
+    # 今月と翌月の週を取得
+    this_month_weeks = get_month_weeks(today.year, today.month)
+
+    next_month = (today.month % 12) + 1
+    next_year = today.year + (today.month // 12)
+
+    next_month_weeks = get_month_weeks(next_year, next_month)
+
+    # データ挿入
+    for start, end in this_month_weeks + next_month_weeks:
+        week = Week(start_date=start, end_date=end, status='scheduled')
+        db.add(week)
+
+    db.commit()
+

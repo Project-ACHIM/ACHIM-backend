@@ -3,16 +3,16 @@
 from datetime import datetime
 from sqlalchemy.orm import Session
 
-from crud.week import get_scheduled_week_to_activate, update_week_status
-from crud.group import create_or_get_group, add_user_to_group
-from crud.group_member import get_matched_user_ids
-from crud.user import get_unmatched_users
-from models import GroupMember
+# from crud.week import get_scheduled_week_to_activate, update_week_status
+# from crud.group import create_or_get_group, add_user_to_group
+# from crud.group_member import get_matched_user_ids
+# from crud.user import get_unmatched_users
+# from models import GroupMember
 
 from sqlalchemy.orm import Session
 from datetime import datetime, date
 from backend.db.models import Week, UserWeekPreference, Group, GroupMember, User
-from db import get_db   #db.session.py
+from backend.db.session import get_db   #db.session.py
 
 
 # 週の状態を更新する処理（前週をclosed、今週をactive）
@@ -53,13 +53,13 @@ def match_users_by_preference(db: Session):
     # ジャンルごとにグループを作成し、ユーザーを割り当てる
     preferences = db.query(UserWeekPreference).filter_by(week_id=active_week.id).all()
 
-    genre_to_users = {}
+    category_to_users = {}
     for pref in preferences:
-        genre_to_users.setdefault(pref.genre, []).append(pref.user)
+        category_to_users.setdefault(pref.category, []).append(pref.user)
 
-    for genre, users in genre_to_users.items():
+    for category, users in category_to_users.items():
         # グループをジャンル別に1つずつ作成（必要に応じて分割ロジック追加可）
-        group = Group(week_id=active_week.id, genre=genre)
+        group = Group(week_id=active_week.id, category=category)
         db.add(group)
         db.flush()  # ID確保
 
@@ -70,7 +70,7 @@ def match_users_by_preference(db: Session):
     db.commit()
 
 
-def run_weekly_tasks():
+def run_weekly_tasks(db:Session):
     # 外部から呼び出すエントリポイント
     db = next(get_db())
     close_last_week_and_activate_new(db)
