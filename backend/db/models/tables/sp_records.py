@@ -9,6 +9,7 @@ class SPRecord(Base):
     week_id = Column(Integer, ForeignKey("weeks.id"))
     date = Column(Date, nullable=False)
     sp = Column(Integer, nullable=False)
+    mode = Column(String, nullable=False)
     detail = Column(JSON)
     created_at = Column(DateTime, server_default=func.now())
 
