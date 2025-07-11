@@ -3,7 +3,7 @@ from api.auth import mail
 from api import users
 from api import discount_ticket
 from backend.api.auth import mail
-from backend.api import users
+from backend.api import users, sp_routes, bp_routes
 from backend.db.base import Base
 from backend.db.session import engine
 from backend.db import models  # モデル定義の読み込み
@@ -55,6 +55,8 @@ app = FastAPI(lifespan=lifespan)
 
 app.include_router(mail.router, prefix="/auth/mail", tags=["auth:mail"])
 app.include_router(users.router, prefix="/users", tags=["users"])
+app.include_router(sp_routes.router)
+app.include_router(bp_routes.router)
 
 # ひとまずテーブルを作るための処理
 print("テーブル作成開始")
