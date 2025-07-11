@@ -1,4 +1,4 @@
-from db.models.common import *
+from backend.db.models.common import *
 
 # --- sp_records ---
 class SPRecord(Base):
