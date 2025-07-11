@@ -1,11 +1,13 @@
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from core.security import decode_access_token
-from crud.user_crud import get_user_by_id
+from backend.core.security import decode_access_token
+from backend.crud.user_crud import get_user_by_id
+from backend.db.session import get_db
+from sqlalchemy.orm import Session
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/mail/login")
 
-def get_current_user(token: str = Depends(oauth2_scheme)):
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     user_id = decode_access_token(token)
     if not user_id:
         raise HTTPException(
@@ -13,7 +15,7 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
             detail="Invalid token",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    user = get_user_by_id(user_id)
+    user = get_user_by_id(db, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
