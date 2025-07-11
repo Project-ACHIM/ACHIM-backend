@@ -1,4 +1,7 @@
 from fastapi import FastAPI
+from api.auth import mail
+from api import users
+from api import discount_ticket
 from backend.api.auth import mail
 from backend.api import users
 from backend.db.base import Base
@@ -13,6 +16,9 @@ from contextlib import asynccontextmanager
 from backend.db.set_up import setUp_regions
 
 
+app.include_router(mail.router, prefix="/auth/mail", tags=["auth:mail"])
+app.include_router(users.router, prefix="/users", tags=["users"])
+app.include_router(discount_ticket.router, prefix="/tickets",tags=["tickets"])
 # logging.basicConfig(level=logging.DEBUG)
 
 # ----自動実行(schedular)の設定---------------
