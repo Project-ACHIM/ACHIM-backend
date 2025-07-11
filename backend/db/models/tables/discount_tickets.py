@@ -1,7 +1,7 @@
 from db.models.common import *
-from squalchemy import Column, Integer, String, Text, DateTime
+from sqlalchemy import Column, Integer, String, Text, DateTime
 from sqlalchemy.sql import func
-from backend.db.database import Base
+# from backend.db.database import Base
 
 # 割引券テーブルのモデル
 class DiscountTicket(Base):
