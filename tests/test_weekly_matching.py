@@ -1,12 +1,9 @@
 from datetime import date, timedelta
 from backend.service.weekly_tasks import run_weekly_tasks
 from backend.db.models import Week, User, UserWeekPreference, Group, GroupMember
-import random
 from backend.db.session import get_db
-
 from backend.db.base import Base
 from backend.db.session import engine
-
 from backend.db.set_up import setUp_regions
 
 howmanydata = 11
@@ -16,7 +13,6 @@ get_db
 
 #　ダミーデータ挿入(user,pref)
 def seed_users_and_preferences(db, week):
-    categories = ["walking", "running"]
     users = []
 
     for i in range(howmanydata):
