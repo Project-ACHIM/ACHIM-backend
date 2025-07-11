@@ -1,4 +1,4 @@
-from db.models.common import *
+from backend.db.models.common import *
 
 class GroupMember(Base):
     __tablename__ = 'group_members'

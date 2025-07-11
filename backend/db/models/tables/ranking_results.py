@@ -1,4 +1,4 @@
-from db.models.common import *
+from backend.db.models.common import *
 
 class RankingResult(Base):
     __tablename__ = "ranking_results"
