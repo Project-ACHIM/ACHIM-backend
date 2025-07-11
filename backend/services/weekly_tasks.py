@@ -1,18 +1,8 @@
 # service/weekly_tasks.py
-
-from datetime import datetime
-from sqlalchemy.orm import Session
-
-# from crud.week import get_scheduled_week_to_activate, update_week_status
-# from crud.group import create_or_get_group, add_user_to_group
-# from crud.group_member import get_matched_user_ids
-# from crud.user import get_unmatched_users
-# from models import GroupMember
-
 from sqlalchemy.orm import Session
 from datetime import datetime, date
 from backend.db.models import Week, UserWeekPreference, Group, GroupMember, User
-from backend.db.session import get_db   #db.session.py
+from backend.db.session import get_db, SessionLocal   #db.session.py
 
 
 # 週の状態を更新する処理（前週をclosed、今週をactive）
@@ -70,9 +60,10 @@ def match_users_by_preference(db: Session):
     db.commit()
 
 
-def run_weekly_tasks(db:Session):
-    # 外部から呼び出すエントリポイント
-    db = next(get_db())
-    close_last_week_and_activate_new(db)
-    match_users_by_preference(db)
-    db.close()
+def run_weekly_tasks():
+    db = SessionLocal()
+    try:
+        close_last_week_and_activate_new(db)
+        match_users_by_preference(db)
+    finally:
+        db.close()
