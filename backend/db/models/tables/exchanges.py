@@ -1,7 +1,7 @@
 from db.models.common import *
 from sqlalchemy import Column,Integer, String, DateTime, ForeignKey
 from sqlalchemy.sql import func
-# from backend.db.database import Base #既存のBaseクラスを使用
+from db.session import Base #既存のBaseクラスを使用
 
 class Exchange(Base):
     __tablename__ = "exchanges"
