@@ -8,12 +8,12 @@ from backend.api import auth_google
 from backend.service.monthly_tasks import generate_next_month_weeks
 from backend.service.weekly_tasks import run_weekly_tasks
 from apscheduler.schedulers.background import BackgroundScheduler
-import logging
+# import logging
 from contextlib import asynccontextmanager
-from backend.db.seed import seed_regions
+from backend.db.set_up import setUp_regions
 
 
-logging.basicConfig(level=logging.DEBUG)
+# logging.basicConfig(level=logging.DEBUG)
 
 # ----自動実行(schedular)の設定---------------
 weekly_scheduler = BackgroundScheduler() # インスタンス生成
@@ -53,7 +53,7 @@ app.include_router(users.router, prefix="/users", tags=["users"])
 # ひとまずテーブルを作るための処理
 print("テーブル作成開始")
 Base.metadata.create_all(bind=engine)
-seed_regions()
+setUp_regions()
 print("テーブル作成完了")
 
 

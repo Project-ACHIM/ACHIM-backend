@@ -2,25 +2,36 @@ from datetime import date, timedelta
 from backend.service.weekly_tasks import run_weekly_tasks
 from backend.db.models import Week, User, UserWeekPreference, Group, GroupMember
 import random
+from backend.db.session import get_db
+
+from backend.db.base import Base
+from backend.db.session import engine
+
+from backend.db.set_up import setUp_regions
 
 howmanydata = 11
+half = howmanydata // 2  # 整数除算
+
+get_db
 
 #　ダミーデータ挿入(user,pref)
 def seed_users_and_preferences(db, week):
     categories = ["walking", "running"]
     users = []
 
-
     for i in range(howmanydata):
-        user = User(username=f"user{i+1}", email=f"user{i+1}@test.com", hashed_password="dummy")
+        user = User(name=f"user{i+1}", email=f"user{i+1}@test.com", password="dummy", region_id = 1)
         db.add(user)
         db.flush()
         users.append(user)
-
+        if i < half:
+            category="walking"
+        else:
+            category="running"
         pref = UserWeekPreference(
             user_id=user.id,
             week_id=week.id,
-            category=random.choice(categories)
+            category = category          
         )
         db.add(pref)
 
@@ -59,12 +70,20 @@ def insert_closed_and_active_weeks(db):
 
 
 def test_run_weekly_tasks(db):
+    # モデル反映のためリフレッシュ
+    Base.metadata.drop_all(bind=engine)
+    Base.metadata.create_all(bind=engine)
 
+    # 必要なダミーデータ作成
+    setUp_regions()
+    closed_week, active_week = insert_closed_and_active_weeks(db)
+    seed_users_and_preferences(db, active_week)
 
-    # 2. 対象関数を実行
-    run_weekly_tasks()
+    # 対象関数を実行
+    print('run_weekly_tasks()')
+    run_weekly_tasks(db)
 
-    # 3. 結果を検証
+    # 結果を検証
     active_week = db.query(Week).filter_by(status='active').first()
     assert active_week is not None
 
@@ -72,12 +91,24 @@ def test_run_weekly_tasks(db):
     assert group is not None
 
     members = db.query(GroupMember).filter_by(group_id=group.id).all()
-    assert len(members) == 2
+    assert 3 <= len(members) <= 5, f"group {group.id} has {len(members)} members"
 
-    # 4. テストデータ削除
+    # テストデータ削除
+
+    drop_all(db)
+    models_to_check = [Group, GroupMember, UserWeekPreference, User, Week]
+
+    for model in models_to_check:
+        count = db.query(model).count()
+        assert count == 0, f"{model.__name__} still has {count} records"
+
+
+def drop_all(db):
     db.query(GroupMember).delete()
     db.query(Group).delete()
     db.query(UserWeekPreference).delete()
     db.query(User).delete()
     db.query(Week).delete()
     db.commit()
+    print('削除完了')
+

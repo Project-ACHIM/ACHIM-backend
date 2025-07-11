@@ -11,5 +11,5 @@ from backend.db.models.tables.mission_results import MissionResult
 from backend.db.models.tables.ranking_results import RankingResult
 from backend.db.models.tables.weeks import Week
 from backend.db.models.tables.bp_entries import BpEntry
+from backend.db.models.tables.user_week_preference import UserWeekPreference
 
-# モデルを追加したらここにも追加する！
