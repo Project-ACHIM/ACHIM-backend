@@ -2,6 +2,7 @@ from datetime import date, timedelta
 from backend.db.models.tables.weeks import Week
 from backend.db.session import SessionLocal
 from backend.db.models.tables.regions import Region
+from sqlalchemy.orm import Session
 
 regions = [
     {"id": 999, "name": "未設定", "code": "999", "area_group": "未分類"},
@@ -53,8 +54,7 @@ regions = [
     {"id": 46, "name": "鹿児島県", "code": "46", "area_group": "九州地方"},
     {"id": 47, "name": "沖縄県", "code": "47", "area_group": "沖縄地方"},
 ]
-db = SessionLocal()
-def setUp_regions():
+def setUp_regions(db: Session):
     
     if db.query(Region).count() == 0:
         for r in regions:
@@ -63,7 +63,6 @@ def setUp_regions():
         print("地域データを登録しました")
     else:
         print("地域データは既に存在します")
-    db.close()
 
 # activeの週を挿入
 def insert_active_week(db):
