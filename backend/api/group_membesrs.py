@@ -1,11 +1,13 @@
 from http.client import HTTPException
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
-from sqlalchemy.orm import Session
-from backend.db.models import User, Group, GroupMember
+from backend.db.models import GroupMember
 import json
 
+router = APIRouter()
+
 # groupmenberに所属しているuser.idをjsonで返す(自分を除く）
+@router.get("/groups/{user_id}/members")
 def get_group_menbers(db, user_id):
 
     # group_idを取得
