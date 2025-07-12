@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from backend.schemas.discount_ticket import DiscountTicketOut
 from backend.crud import discount_ticket as crud
-from db.session import get_db
+from backend.db.session import get_db
 router = APIRouter()
 
 @router.get("/tickets", response_model=list[DiscountTicketOut])
