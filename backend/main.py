@@ -1,24 +1,19 @@
 from fastapi import FastAPI
-from api.auth import mail
-from api import users
-from api import discount_ticket
 from backend.api.auth import mail
-from backend.api import users, sp_routes, bp_routes
+from backend.api import discount_ticket
+from backend.api import users, sp_routes, bp_routes, discount_ticket
 from backend.db.base import Base
-from backend.db.session import engine
+from backend.db.session import engine, SessionLocal
 from backend.db import models  # モデル定義の読み込み
 from backend.api import auth_google
-from backend.service.monthly_tasks import generate_next_month_weeks
-from backend.service.weekly_tasks import run_weekly_tasks
+from backend.services.monthly_tasks import generate_next_month_weeks
+from backend.services.weekly_tasks import run_weekly_tasks
 from apscheduler.schedulers.background import BackgroundScheduler
 # import logging
 from contextlib import asynccontextmanager
-from backend.db.set_up import setUp_regions
+from backend.db.set_up import setUp_regions, init_weeks_if_empty
+from sqlalchemy.orm import Session
 
-
-app.include_router(mail.router, prefix="/auth/mail", tags=["auth:mail"])
-app.include_router(users.router, prefix="/users", tags=["users"])
-app.include_router(discount_ticket.router, prefix="/tickets",tags=["tickets"])
 # logging.basicConfig(level=logging.DEBUG)
 
 # ----自動実行(schedular)の設定---------------
@@ -55,13 +50,17 @@ app = FastAPI(lifespan=lifespan)
 
 app.include_router(mail.router, prefix="/auth/mail", tags=["auth:mail"])
 app.include_router(users.router, prefix="/users", tags=["users"])
-app.include_router(sp_routes.router)
-app.include_router(bp_routes.router)
+app.include_router(discount_ticket.router, prefix="/tickets",tags=["tickets"])
+app.include_router(sp_routes.router, prefix="/sp", tags=["SP"])
+app.include_router(bp_routes.router, prefix="/bp", tags=["BP"])
 
 # ひとまずテーブルを作るための処理
 print("テーブル作成開始")
 Base.metadata.create_all(bind=engine)
-setUp_regions()
+db = SessionLocal()
+setUp_regions(db)
+init_weeks_if_empty(db)
+db.close()
 print("テーブル作成完了")
 
 

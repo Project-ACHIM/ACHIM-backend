@@ -13,7 +13,13 @@ def get_user_by_email(db: Session, email: str):
     ).first()
 
 def create_user(db: Session, email: str, hashed_password: str):
-    user = User(region_id=999)  # 初期は未設定
+    user = User(
+        name=email.split("@")[0],         # 仮のユーザー名
+        email=email,
+        password=hashed_password,         # ここはハッシュ済み
+        region_id=999,                    # 初期設定（未選択）
+        notification_enabled=True         # 通知ONをデフォルト
+    )
     db.add(user)
     db.commit()
     db.refresh(user)
@@ -27,10 +33,9 @@ def create_user(db: Session, email: str, hashed_password: str):
     )
     db.add(auth_provider)
 
-    # BP初期化
     initial_point = Point(user_id=user.id, bp_total=0, bet_bp_pending=0)
     db.add(initial_point)
-    
+
     db.commit()
     db.refresh(auth_provider)
 

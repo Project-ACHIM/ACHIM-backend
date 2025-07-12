@@ -45,3 +45,26 @@ def update_bet_result(user_id: int, group_id: int, result_bp: int, db: Session) 
     entry.result_bp = result_bp
     db.commit()
 
+# 指定ユーザー・週の賭けBPエントリー取得
+def get_bet_entry(user_id: int, group_id: int, db: Session) -> BpEntry | None:
+    return db.query(BpEntry).filter(
+        BpEntry.user_id == user_id,
+        BpEntry.group_id == group_id
+    ).first()
+
+# ランキング報酬の加算（Point）
+def add_ranking_reward_bp(user_id: int, reward_bp: int, db: Session):
+    point = db.query(Point).filter(Point.user_id == user_id).first()
+    if not point:
+        point = Point(user_id=user_id, bp_total=0, bet_bp_pending=0)
+        db.add(point)
+        db.flush()
+    point.bp_total += reward_bp
+    db.commit()
+
+# エントリ結果BPの更新
+def set_result_bp(entry: BpEntry, result_bp: int, db: Session):
+    entry.result_bp = result_bp
+    db.commit()
+
+

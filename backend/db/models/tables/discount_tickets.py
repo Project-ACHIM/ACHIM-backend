@@ -1,7 +1,6 @@
-from db.models.common import *
+from backend.db.models.common import *
 from sqlalchemy import Column, Integer, String, Text, DateTime
 from sqlalchemy.sql import func
-from db.session import Base
 
 # 割引券テーブルのモデル
 class DiscountTicket(Base):

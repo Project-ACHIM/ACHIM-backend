@@ -2,6 +2,7 @@ from backend.db.models.tables.sp_records import SPRecord
 from sqlalchemy.orm import Session
 from sqlalchemy import func, select
 from datetime import date
+from collections import OrderedDict
 from backend.core.point_config import *
 
 # SPレコードの追加。 detailは辞書型で受け取り、内部でJSON文字列化
@@ -54,19 +55,23 @@ def get_sp_breakdown_by_date(user_id: int, week_id: int, target_date: date, db: 
         )
     ).scalars().all()
 
-    breakdown = {
-        "total": 0,
-        "by_source": {}
-    }
+    # 出力順を固定（画面に合わせる）
+    source_keys = ["walk", "distance", "photo", "wake", "mvp"]
 
+    breakdown_by_source = OrderedDict((key, 0) for key in source_keys)
+
+    total = 0
     for r in records:
         source = r.detail.get("source", "unknown")
-        breakdown["total"] += r.sp
-        if source not in breakdown["by_source"]:
-            breakdown["by_source"][source] = 0
-        breakdown["by_source"][source] += r.sp
+        total += r.sp
+        if source in breakdown_by_source:
+            breakdown_by_source[source] += r.sp
 
-    return breakdown
+    return {
+        "total": total,
+        "by_source": breakdown_by_source
+    }
+
 
 
 def get_weeks_sp_total(user_id: int, week_id: int, db: Session) -> int:

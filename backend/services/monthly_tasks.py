@@ -1,5 +1,5 @@
 from datetime import date, timedelta
-from db import get_db
+from backend.db.session import get_db
 from backend.db.models import Week
 
 # 翌月の１ヵ月分のweeksデータを挿入する

@@ -30,7 +30,12 @@ BP_RUN_UNIT = 1            # 距離単位
 BP_RUN_GAIN = 100          # 単位ごとのBP
 
 # --- 勝者倍率 ---
-BP_RATE_MIN = 1.2          # 最小倍率
-BP_RATE_MAX = 2.0          # 最大倍率
+RANKING_BP_MULTIPLIERS = {
+    1: 2.0,  # 1位
+    2: 1.5,  # 2位
+    3: 1.2,  # 3位
+    4: 1.0,  # 4位
+    5: 0.8   # 5位
+}
 
 

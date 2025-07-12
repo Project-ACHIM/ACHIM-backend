@@ -1,6 +1,7 @@
 from backend.db.models.tables.points import Point
-from backend.db.models.tables.sp_records import SPRecord
-from backend.db.models.tables.bp_entries import BpEntry
+from backend.db.models.tables.ranking_results import RankingResult
+from backend.db.models.tables.group_members import GroupMember
+from typing import Optional
 from sqlalchemy.orm import Session
 from datetime import date
 from backend.core.point_config import *
@@ -26,7 +27,7 @@ def add_bp_for_distance(user_id: int, distance_km: float, db:Session):
         increase_bp(user_id, bp, reason="distance", db=db)
 
 # 歩数＋距離による総合BP加算
-def add_bp_from_steps_and_distance(user_id: int, steps: int, distance_km: float, db: Session):
+def add_bp_from_activity(user_id: int, steps: int, distance_km: float, db: Session):
     step_units = steps // BP_WALK_UNIT
     step_bp = step_units * BP_WALK_GAIN
 
@@ -37,8 +38,69 @@ def add_bp_from_steps_and_distance(user_id: int, steps: int, distance_km: float,
     if total_bp > 0:
         increase_bp(user_id, total_bp, reason="activity", db=db)
 
+# ランキング報酬のBP加算
+def add_bp_by_ranking_reward(user_id: int, week_id: int, rank: int, bp_reward: int, db: Session):
+    point = db.query(Point).filter(Point.user_id == user_id).first()
+    if not point:
+        raise ValueError("対象ユーザーが存在しません")
+
+    point.bp_total += bp_reward
+    db.commit()
+
+def add_bp_from_bonus(db: Session, user_id: int, week_id: int, amount: int, reason: str, detail: Optional[str] = None):
+    point = db.query(Point).filter(Point.user_id == user_id).first()
+    if not point:
+        raise ValueError("対象ユーザーが存在しません")
+
+    point.bp_total += amount
+    db.commit()
+
+# BPの減少処理
+def decrease_bp_logic(db: Session, user_id: int, amount: int, reason: str, detail: Optional[str] = None):
+    point = db.query(Point).filter(Point.user_id == user_id).first()
+    if not point or point.bp_total < amount:
+        raise ValueError("BPが不足しているか、不正なユーザーです")
+    
+    point.bp_total -= amount
+    db.commit()
+
+def distribute_ranking_bp_rewards(week_id: int, db: Session):
+    results = db.query(RankingResult).filter(RankingResult.week_id == week_id).all()
+
+    for result in results:
+        user_id = result.user_id
+        rank = result.rank
+
+        multiplier = RANKING_BP_MULTIPLIERS.get(rank)
+        if multiplier is None:
+            continue
+
+        # group_idの取得
+        group_member = db.query(GroupMember).join(GroupMember.group).filter(
+            GroupMember.user_id == user_id,
+            GroupMember.group.has(week_id=week_id)
+        ).first()
+
+        if not group_member:
+            continue
+
+        group_id = group_member.group_id
+
+        entry = get_bet_entry(user_id, group_id, db)
+        if not entry or entry.bet_bp is None:
+            continue
+
+        reward = int(entry.bet_bp * multiplier)
+        set_result_bp(entry, reward, db)
+        add_ranking_reward_bp(user_id, reward, db)
+
 # SP計算ロジック
-def calc_sp_for_steps_and_distance(mode: str, redemption: bool, step_count: int, distance_km: float) -> tuple[int, dict, str]:
+def get_unit_info(
+    mode: str,
+    redemption: bool,
+    step_count: int,
+    distance_km: float
+) -> tuple[int, int, int, str, dict]:
     config_map = {
         ("walking", False): (SP_WALK_UNIT, SP_WALK_GAIN, step_count, "walk"),
         ("walking", True):  (SP_WALK_RDM_UNIT, SP_WALK_RDM_GAIN, step_count, "walk"),
@@ -51,9 +113,10 @@ def calc_sp_for_steps_and_distance(mode: str, redemption: bool, step_count: int,
         raise ValueError(f"未対応のアクティビティモードです: mode={mode}, redemption={redemption}")
 
     unit, gain, value, key = config
-    sp = int((value // unit) * gain)
+    current_units = int(value // unit)
     detail = {"mode": mode, key: value, "redemption": redemption, "source": key}
-    return sp, detail, key
+
+    return current_units, gain, unit, key, detail
 
 
 def calc_sp_for_event(mode: str) -> tuple[int, dict]:
@@ -78,35 +141,70 @@ def add_sp_by_mode(
     today = date.today()
 
     if mode in ("walking", "running"):
-        sp, detail, key = calc_sp_for_steps_and_distance(mode, redemption, step_count, distance_km)
-    elif mode in ("mvp", "photo", "wake"):
-        sp, detail = calc_sp_for_event(mode)
-        key = None
+        current_units, gain, unit, key, detail = get_unit_info(mode, redemption, step_count, distance_km)
+        new_sp = current_units * gain
+
+        if new_sp <= 0:
+            return 0
+
+        today_total = get_today_sp(user_id, week_id, db)
+        remaining = SP_DAY_CAP - today_total
+        if remaining <= 0:
+            return 0
+
+        max_addable_sp = min(new_sp, remaining)
+        record = get_sp_record_by_date(user_id, mode, today, db)
+
+        if record:
+            prev_value = record.detail.get(key, 0)
+            prev_units = int(prev_value // unit)
+            new_units = int(detail[key] // unit)
+
+            unit_diff = new_units - prev_units
+            delta_sp = unit_diff * gain
+
+            if unit_diff <= 0 or delta_sp <= 0:
+                return 0
+
+            delta_sp = min(delta_sp, remaining)
+            update_sp_record(record, record.sp + delta_sp, detail, db)
+            return delta_sp
+        else:
+            add_sp_record(user_id, week_id, today, max_addable_sp, mode, detail, db)
+            return max_addable_sp
+
+    elif mode in ("wake", "photo"):
+        # 1日1回制限: すでに今日の記録があれば無効
+        existing = get_sp_record_by_date(user_id, mode, today, db)
+        if existing:
+            return 0
+
+        new_sp, detail = calc_sp_for_event(mode)
+
+        today_total = get_today_sp(user_id, week_id, db)
+        remaining = SP_DAY_CAP - today_total
+        if remaining <= 0:
+            return 0
+
+        max_addable_sp = min(new_sp, remaining)
+        add_sp_record(user_id, week_id, today, max_addable_sp, mode, detail, db)
+        return max_addable_sp
+
+    elif mode == "mvp":
+        new_sp, detail = calc_sp_for_event(mode)
+
+        today_total = get_today_sp(user_id, week_id, db)
+        remaining = SP_DAY_CAP - today_total
+        if remaining <= 0:
+            return 0
+
+        max_addable_sp = min(new_sp, remaining)
+        add_sp_record(user_id, week_id, today, max_addable_sp, mode, detail, db)
+        return max_addable_sp
+
     else:
         return 0
 
-    if sp <= 0:
-        return 0
-
-    today_total = get_today_sp(user_id, week_id, db)
-    remaining = SP_DAY_CAP - today_total
-    if remaining <= 0:
-        return 0
-
-    total_sp = min(sp, remaining)
-    record = get_sp_record_by_date(user_id, mode, today, db)
-
-    if record:
-        if key and detail[key] <= record.detail.get(key, 0):
-            return 0
-        delta_sp = total_sp - record.sp
-        if delta_sp <= 0:
-            return 0
-        update_sp_record(record, total_sp, detail, db)
-        return delta_sp
-    else:
-        add_sp_record(user_id, week_id, today, total_sp, mode, detail, db)
-        return total_sp
     
 def add_sp_from_activity(
     db: Session,
