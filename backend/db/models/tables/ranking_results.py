@@ -1,5 +1,6 @@
 from backend.db.models.common import *
 
+# spをどんどん集計していく
 class RankingResult(Base):
     __tablename__ = "ranking_results"
 
