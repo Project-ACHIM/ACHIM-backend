@@ -1,5 +1,5 @@
 from datetime import date, timedelta
-from backend.service.weekly_tasks import run_weekly_tasks
+from backend.services.weekly_tasks import run_weekly_tasks
 from backend.db.models import Week, User, UserWeekPreference, Group, GroupMember
 from backend.db.session import get_db
 from backend.db.base import Base
@@ -71,7 +71,7 @@ def test_run_weekly_tasks(db):
     Base.metadata.create_all(bind=engine)
 
     # 必要なダミーデータ作成
-    setUp_regions()
+    setUp_regions(db)
     closed_week, active_week = insert_closed_and_active_weeks(db)
     seed_users_and_preferences(db, active_week)
 
