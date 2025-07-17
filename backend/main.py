@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from backend.api.auth import mail
 from backend.api import discount_ticket
-from backend.api import users, sp_routes, bp_routes, discount_ticket
+from backend.api import users, sp_routes, bp_routes, discount_ticket, history, ranking, group_membesrs
 from backend.db.base import Base
 from backend.db.session import engine, SessionLocal
 from backend.db import models  # モデル定義の読み込み
@@ -53,6 +53,10 @@ app.include_router(users.router, prefix="/users", tags=["users"])
 app.include_router(discount_ticket.router, prefix="/tickets",tags=["tickets"])
 app.include_router(sp_routes.router, prefix="/sp", tags=["SP"])
 app.include_router(bp_routes.router, prefix="/bp", tags=["BP"])
+
+app.include_router(history.router, prefix="/history", tags=["history"])
+app.include_router(ranking.router, prefix="/groups/{user_id}/rankings", tags=["ranking"])
+app.include_router(group_membesrs.router, prefix="/groups/{user_id}/members", tags=["members"])
 
 # ひとまずテーブルを作るための処理
 print("テーブル作成開始")
