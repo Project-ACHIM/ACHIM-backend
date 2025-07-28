@@ -14,6 +14,7 @@ class User(Base):
 
     # 追加項目
     birth_date = Column(Date)
+    age = Column(Integer, nullable=True)
     region_id = Column(Integer, ForeignKey("regions.id"), nullable=False)
     wake_up_time = Column(Time)
     notification_enabled = Column(Boolean, default=True)

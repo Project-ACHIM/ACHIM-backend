@@ -7,6 +7,7 @@ from backend.db.models.tables.users import User
 from backend.schemas.user import UserResponse
 from backend.schemas.user import PubProfileResponse
 from backend.schemas.user import UserUpdateRequest
+from backend.db.models.tables.regions import Region
 
 router = APIRouter()
 
@@ -33,6 +34,7 @@ def get_profile(
         name=current_user.name,
         email=auth.email,
         profile_image=current_user.profile_image,
+        age=current_user.age,
         region_id=current_user.region_id,
         birth_date=current_user.birth_date,
         wake_up_time=current_user.wake_up_time,
@@ -70,8 +72,13 @@ def update_profile(
 ):
     if update.name is not None:
         current_user.name = update.name
-    if update.region_id is not None:
-        current_user.region_id = update.region_id
+    if update.age is not None:
+        current_user.age = update.age
+    if update.region is not None:
+        region = db.query(Region).filter(Region.name == update.region).first()
+        if not region:
+            raise HTTPException(status_code=400, detail="指定された地域が見つかりません")
+        current_user.region_id = region.id
     if update.wake_up_time is not None:
         current_user.wake_up_time = update.wake_up_time
     if update.notification_enabled is not None:
@@ -90,6 +97,7 @@ def update_profile(
         name=current_user.name,
         email=auth.email,
         profile_image=current_user.profile_image,
+        age=current_user.age,
         region_id=current_user.region_id,
         birth_date=current_user.birth_date,
         wake_up_time=current_user.wake_up_time,
