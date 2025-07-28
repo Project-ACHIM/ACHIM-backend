@@ -14,6 +14,7 @@ from contextlib import asynccontextmanager
 from backend.db.set_up import setUp_regions, init_weeks_if_empty
 from sqlalchemy.orm import Session
 
+from fastapi.middleware.cors import CORSMiddleware
 # logging.basicConfig(level=logging.DEBUG)
 
 # ----自動実行(schedular)の設定---------------
@@ -47,6 +48,14 @@ async def lifespan(app: FastAPI):
 
 # FastAPI アプリに lifespan を登録
 app = FastAPI(lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # 一旦 "*" にしておいて、後で絞り込むと安全です
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(mail.router, prefix="/auth/mail", tags=["auth:mail"])
 app.include_router(users.router, prefix="/users", tags=["users"])
