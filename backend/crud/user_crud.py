@@ -40,3 +40,5 @@ def create_user(db: Session, email: str, hashed_password: str):
     db.refresh(auth_provider)
 
     return user
+
+# def update_user(db: Session, user_id: int, )
