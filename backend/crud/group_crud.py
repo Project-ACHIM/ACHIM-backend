@@ -1,12 +1,10 @@
 from http.client import HTTPException
-from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
 from backend.db.models import GroupMember
 
-router = APIRouter()
+# insertはmaching_crud.pyにある
 
-# groupmenberに所属しているuser.idをjsonで返す(自分を除く）
-@router.get("/groups/{user_id}/members")
+# 同じグループの他メンバーのuser.idを取得(自分を除く)
 def get_group_menbers(db, user_id):
 
     # group_idを取得
@@ -16,7 +14,7 @@ def get_group_menbers(db, user_id):
 
     group_id = group_member.group_id
 
-    # 同じグループの他メンバーのuser.idを取得(自分を除く)
+   
     other_user_ids = (
         db.query(GroupMember.user_id)
         .filter(GroupMember.group_id == group_id)
