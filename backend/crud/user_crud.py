@@ -41,4 +41,5 @@ def create_user(db: Session, email: str, hashed_password: str):
 
     return user
 
-# def update_user(db: Session, user_id: int, )
+def update_user(db: Session, user_id: int, ):
+    pass

@@ -64,8 +64,8 @@ app.include_router(sp_routes.router, prefix="/sp", tags=["SP"])
 app.include_router(bp_routes.router, prefix="/bp", tags=["BP"])
 
 app.include_router(history.router, prefix="/history", tags=["history"])
-app.include_router(ranking.router, prefix="/groups/{user_id}/rankings", tags=["ranking"])
-app.include_router(group_membesrs.router, prefix="/groups/{user_id}/members", tags=["members"])
+app.include_router(ranking.router, prefix="/groups", tags=["ranking"])
+app.include_router(group_membesrs.router, prefix="/groups", tags=["members"])
 
 # ひとまずテーブルを作るための処理
 print("テーブル作成開始")
