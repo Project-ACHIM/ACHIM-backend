@@ -6,8 +6,8 @@ from datetime import date
 from backend.db.session import get_db
 from backend.api.auth.dependencies import get_current_user
 from backend.utils.utils import validate_user
-from backend.schemas.photo import UploadedPhotoResponse
-from backend.crud.photo import get_photos_by_group_and_date
+from backend.features.photo_event.photo_schemas import UploadedPhotoResponse
+from backend.features.photo_event.photo_router import get_photos_by_group_and_date
 
 router = APIRouter()
 
