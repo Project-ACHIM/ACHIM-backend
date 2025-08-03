@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, select
 from datetime import date
 from collections import OrderedDict
-from backend.core.point_config import *
+from backend.features.points.point_constants import *
 
 # SPレコードの追加。 detailは辞書型で受け取り、内部でJSON文字列化
 def add_sp_record(user_id: int, week_id: int, record_date: date, sp_value: int, mode: str, detail: dict, db: Session) -> None:

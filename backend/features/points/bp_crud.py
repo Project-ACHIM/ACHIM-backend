@@ -2,7 +2,7 @@ from backend.db.models.tables.points import Point
 from backend.db.models.tables.bp_entries import BpEntry
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import NoResultFound
-from backend.core.point_config import *
+from backend.features.points.point_constants import *
 
 # 指定ユーザーの現在のBP残高を取得
 def get_current_bp(user_id: int, db: Session) -> int:

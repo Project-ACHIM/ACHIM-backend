@@ -5,8 +5,8 @@ from typing import Optional
 from backend.db.session import get_db
 from backend.api.auth.dependencies import get_current_user
 from backend.utils.utils import validate_user
-from backend.schemas.sp import *
-from backend.services.point_service import *
+from backend.features.points.sp_schemas import *
+from backend.features.points.point_service import *
 
 router = APIRouter()
 
