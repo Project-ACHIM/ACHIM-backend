@@ -1,11 +1,15 @@
 from fastapi import FastAPI
-from backend.api.auth import mail
-from backend.api import discount_ticket
-from backend.api import users, sp_routes, bp_routes, discount_ticket, history, ranking, group_membesrs
+from backend.features.auth import auth_router
+from backend.features.exchange import exchange_router
+from backend.features.exchange import exchange_router
 from backend.db.base import Base
 from backend.db.session import engine, SessionLocal
 from backend.db import models  # モデル定義の読み込み
-from backend.api import auth_google
+from backend.features.auth import auth_google
+from backend.features.groups import group_router
+from backend.features.points import bp_router, sp_router
+from backend.features.rankings import history, ranking_router
+from backend.features.users import user_router
 from backend.services.monthly_tasks import generate_next_month_weeks
 from backend.services.weekly_tasks import run_weekly_tasks
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -57,15 +61,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(mail.router, prefix="/auth/mail", tags=["auth:mail"])
-app.include_router(users.router, prefix="/users", tags=["users"])
-app.include_router(discount_ticket.router, prefix="/tickets",tags=["tickets"])
-app.include_router(sp_routes.router, prefix="/sp", tags=["SP"])
-app.include_router(bp_routes.router, prefix="/bp", tags=["BP"])
+app.include_router(auth_router.router, prefix="/auth/mail", tags=["auth:mail"])
+app.include_router(user_router.router, prefix="/users", tags=["users"])
+app.include_router(exchange_router.router, prefix="/tickets",tags=["tickets"])
+app.include_router(sp_router.router, prefix="/sp", tags=["SP"])
+app.include_router(bp_router.router, prefix="/bp", tags=["BP"])
 
 app.include_router(history.router, prefix="/history", tags=["history"])
-app.include_router(ranking.router, prefix="/groups", tags=["ranking"])
-app.include_router(group_membesrs.router, prefix="/groups", tags=["members"])
+app.include_router(ranking_router.router, prefix="/groups", tags=["ranking"])
+app.include_router(group_router.router, prefix="/groups", tags=["members"])
 
 # ひとまずテーブルを作るための処理
 print("テーブル作成開始")
