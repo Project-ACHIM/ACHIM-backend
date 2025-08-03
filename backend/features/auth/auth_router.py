@@ -3,7 +3,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from backend.core.security import verify_password, create_access_token, hash_password
 from backend.crud.user_crud import get_user_by_email, create_user
-from backend.schemas.auth import Token, RegisterRequest
+from backend.features.auth.auth_schemas import Token, RegisterRequest
 from backend.db.session import get_db
 
 router = APIRouter()
