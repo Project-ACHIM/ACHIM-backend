@@ -10,8 +10,8 @@ from backend.features.groups import group_router
 from backend.features.points import bp_router, sp_router
 from backend.features.rankings import history, ranking_router
 from backend.features.users import user_router
-from backend.services.monthly_tasks import generate_next_month_weeks
-from backend.services.weekly_tasks import run_weekly_tasks
+from backend.features.tasks.monthly_tasks import generate_next_month_weeks
+from backend.features.tasks.weekly_tasks import run_weekly_tasks
 from apscheduler.schedulers.background import BackgroundScheduler
 # import logging
 from contextlib import asynccontextmanager

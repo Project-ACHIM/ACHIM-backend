@@ -6,7 +6,7 @@ from backend.db.models import GroupMember
 router = APIRouter()
 
 # groupmenberに所属しているuser.idをjsonで返す(自分を除く）
-@router.get("/groups/{user_id}/members")
+@router.get("/{user_id}/members")
 def get_group_menbers(db, user_id):
 
     # group_idを取得

@@ -3,7 +3,7 @@ from datetime import date
 from sqlalchemy.orm import Session
 from typing import Optional
 from backend.db.session import get_db
-from backend.api.auth.dependencies import get_current_user
+from backend.features.auth.auth_dependencies import get_current_user
 from backend.utils.utils import validate_user
 from backend.features.points.sp_schemas import *
 from backend.features.points.point_service import *
