@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from datetime import datetime, date
 from backend.db.models import Week, UserWeekPreference, Group, GroupMember, User
 from backend.db.session import get_db, SessionLocal   #db.session.py
-from backend.services.point_service import distribute_ranking_bp_rewards
+from backend.features.points.point_service import distribute_ranking_bp_rewards
 
 
 # 週の状態を更新する処理（前週をclosed、今週をactive）

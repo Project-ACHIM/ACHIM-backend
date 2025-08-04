@@ -7,7 +7,6 @@ class UserResponse(BaseModel):
     email: str
     profile_image: str | None
     created_at: datetime
-    age: int | None
     region_id: int
     wake_up_time: time | None
     notification_enabled: bool
@@ -17,7 +16,6 @@ class UserResponse(BaseModel):
 
 class UserUpdateRequest(BaseModel):
     name: str | None = None
-    age: int | None = None
     region_id: str | None = None
     wake_up_time: time | None = None
     notification_enabled: bool | None = None

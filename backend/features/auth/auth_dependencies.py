@@ -1,7 +1,7 @@
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from backend.core.security import decode_access_token
-from backend.crud.user_crud import get_user_by_id
+from backend.features.users.user_crud import get_user_by_id
 from backend.db.session import get_db
 from sqlalchemy.orm import Session
 

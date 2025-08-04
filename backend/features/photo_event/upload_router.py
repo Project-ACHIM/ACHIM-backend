@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, File, UploadFile, HTTPException
 from sqlalchemy.orm import Session
 from backend.db.session import get_db
-from backend.api.auth.dependencies import get_current_user
+from backend.features.auth.auth_dependencies import get_current_user
 from backend.utils.utils import validate_user
-from backend.services.upload_service import save_uploaded_file
-from backend.schemas.upload import UploadResponse
+from backend.features.photo_event.upload_service import save_uploaded_file
+from backend.features.photo_event.upload_schemas import UploadResponse
 
 router = APIRouter()
 

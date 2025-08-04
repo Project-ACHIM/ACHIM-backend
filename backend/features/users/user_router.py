@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from backend.api.auth.dependencies import get_current_user
+from backend.features.auth.auth_dependencies import get_current_user
 from backend.db.session import get_db
 from backend.db.models.tables.auth_providers import AuthProvider
 from backend.db.models.tables.users import User
-from backend.schemas.user import UserResponse
-from backend.schemas.user import PubProfileResponse
-from backend.schemas.user import UserUpdateRequest
+from backend.features.users.user_schemas import UserResponse
+from backend.features.users.user_schemas import PubProfileResponse
+from backend.features.users.user_schemas import UserUpdateRequest
 from backend.db.models.tables.regions import Region
 
 router = APIRouter()
@@ -34,7 +34,6 @@ def get_profile(
         name=current_user.name,
         email=auth.email,
         profile_image=current_user.profile_image,
-        age=current_user.age,
         region_id=current_user.region_id,
         birth_date=current_user.birth_date,
         wake_up_time=current_user.wake_up_time,
@@ -97,7 +96,6 @@ def update_profile(
         name=current_user.name,
         email=auth.email,
         profile_image=current_user.profile_image,
-        age=current_user.age,
         region_id=current_user.region_id,
         birth_date=current_user.birth_date,
         wake_up_time=current_user.wake_up_time,

@@ -11,10 +11,7 @@ class User(Base):
     profile_image = Column(Text)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
-
-    # 追加項目
     birth_date = Column(Date)
-    age = Column(Integer, nullable=True)
     region_id = Column(Integer, ForeignKey("regions.id"), nullable=False)
     wake_up_time = Column(Time)
     notification_enabled = Column(Boolean, default=True)

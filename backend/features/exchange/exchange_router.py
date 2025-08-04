@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from backend.schemas.discount_ticket import DiscountTicketOut
-from backend.crud import discount_ticket as crud
+from backend.features.exchange.exchange_schemas import DiscountTicketOut
+from backend.features.exchange import exchange_crud as crud
 from backend.db.session import get_db
 router = APIRouter()
 

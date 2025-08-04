@@ -4,9 +4,9 @@ from backend.db.models.tables.group_members import GroupMember
 from typing import Optional
 from sqlalchemy.orm import Session
 from datetime import date
-from backend.core.point_config import *
-from backend.crud.sp_crud import *
-from backend.crud.bp_crud import *
+from backend.features.points.point_constants import *
+from backend.features.points.sp_crud import *
+from backend.features.points.bp_crud import *
 
 # 現在のBP取得
 def fetch_current_bp(user_id: int, db: Session) -> int:
