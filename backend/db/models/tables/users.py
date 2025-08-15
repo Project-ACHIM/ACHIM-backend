@@ -16,6 +16,7 @@ class User(Base):
     wake_up_time = Column(Time)
     notification_enabled = Column(Boolean, default=True)
 
+    is_profile_completed = Column(Boolean, default=True, nullable=False) # 仮登録: False / 本登録: True
 
 
     # relation

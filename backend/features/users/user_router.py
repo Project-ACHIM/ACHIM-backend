@@ -1,104 +1,85 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
+from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
 from backend.features.auth.auth_dependencies import get_current_user
 from backend.db.session import get_db
-from backend.db.models.tables.auth_providers import AuthProvider
-from backend.db.models.tables.users import User
-from backend.features.users.user_schemas import UserResponse
-from backend.features.users.user_schemas import PubProfileResponse
-from backend.features.users.user_schemas import UserUpdateRequest
+from backend.features.users import user_crud
+from backend.features.users.user_schemas import UserResponse, PubProfileResponse, UserUpdateRequest
 from backend.db.models.tables.regions import Region
+from backend.db.models.tables.auth_providers import AuthProvider
+from backend.core.response import success_response
+from backend.core.errors import NotFoundException, BadRequestException
 
 router = APIRouter()
 
-@router.get("/profile", response_model=UserResponse, responses={
-    200: {"description": "プロフィール情報取得成功"},
-    401: {"description": "トークンが無効です"},
-    404: {"description": "認証情報が見つかりません"},
-    500: {"description": "サーバーエラー"}
-})
+@router.get("/profile")
 def get_profile(
-    current_user = Depends(get_current_user),
-    db: Session = Depends(get_db)
-) -> UserResponse:
-    auth = db.query(AuthProvider).filter(
-        AuthProvider.user_id == current_user.id,
-        AuthProvider.provider == "email"
-    ).first()
-
-    if not auth:
-        raise HTTPException(status_code=404, detail="認証情報が見つかりません")
-
-    return UserResponse(
-        id=current_user.id,
-        name=current_user.name,
-        email=auth.email,
-        profile_image=current_user.profile_image,
-        region_id=current_user.region_id,
-        birth_date=current_user.birth_date,
-        wake_up_time=current_user.wake_up_time,
-        notification_enabled=current_user.notification_enabled,
-        created_at=current_user.created_at
-    )
-
-@router.get("/profile/{user_id}", response_model=PubProfileResponse, responses={
-    200: {"description": "公開プロフィール取得成功"},
-    404: {"description": "ユーザーが見つかりません"}
-})
-def get_public_profile(user_id: int, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.id == user_id).first()
-    
-    if not user:
-        raise HTTPException(status_code=404, detail="ユーザーが見つかりません")
-
-    return PubProfileResponse(
-        id=user.id,
-        name=user.name,
-        profile_image=user.profile_image,
-        region_id=user.region_id
-    )
-
-@router.patch("/profile", response_model=UserResponse, responses={
-    200: {"description": "プロフィール更新成功"},
-    400: {"description": "無効な入力です"},
-    401: {"description": "トークンが無効です"},
-    500: {"description": "サーバーエラー"}
-})
-def update_profile(
-    update: UserUpdateRequest,
-    current_user = Depends(get_current_user),
+    current_user=Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    if update.name is not None:
-        current_user.name = update.name
-    if update.age is not None:
-        current_user.age = update.age
-    if update.region is not None:
-        region = db.query(Region).filter(Region.name == update.region).first()
-        if not region:
-            raise HTTPException(status_code=400, detail="指定された地域が見つかりません")
-        current_user.region_id = region.id
-    if update.wake_up_time is not None:
-        current_user.wake_up_time = update.wake_up_time
-    if update.notification_enabled is not None:
-        current_user.notification_enabled = update.notification_enabled
-    
-    db.commit()
-    db.refresh(current_user)
+    auth = user_crud.get_auth_provider(db, current_user.id)
+    if not auth:
+        raise NotFoundException("認証情報が見つかりません")
 
-    auth = db.query(AuthProvider).filter(
-        AuthProvider.user_id == current_user.id,
-        AuthProvider.provider == "email"
-    ).first()
-
-    return UserResponse(
+    data = UserResponse(
         id=current_user.id,
         name=current_user.name,
         email=auth.email,
         profile_image=current_user.profile_image,
         region_id=current_user.region_id,
-        birth_date=current_user.birth_date,
         wake_up_time=current_user.wake_up_time,
         notification_enabled=current_user.notification_enabled,
-        created_at=current_user.created_at
+        created_at=current_user.created_at,
+        is_profile_completed=current_user.is_profile_completed
     )
+    return success_response(jsonable_encoder(data), message="プロフィール情報取得成功")
+
+
+@router.get("/profile/{user_id}")
+def get_public_profile(user_id: int, db: Session = Depends(get_db)):
+    user = user_crud.get_user_by_id(db, user_id)
+    if not user:
+        raise NotFoundException("ユーザーが見つかりません")
+    data = PubProfileResponse.model_validate(user)
+    return success_response(data, message="公開プロフィール取得成功")
+
+
+@router.patch("/profile")
+def update_profile(
+    update: UserUpdateRequest,
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    # 地域チェック
+    if update.region_id is not None:
+        region = db.query(Region).filter(Region.id == update.region_id).first()
+        if not region:
+            raise BadRequestException("指定された地域が見つかりません")
+
+    updated_user = user_crud.update_user(db, current_user, **update.model_dump())
+
+    # 本登録判定
+    if (
+        updated_user.name and
+        updated_user.birth_date and
+        updated_user.region_id and
+        updated_user.wake_up_time
+    ):
+        updated_user.is_profile_completed = True
+        db.commit()
+        db.refresh(updated_user)
+
+    auth = user_crud.get_auth_provider(db, updated_user.id)
+
+    data = UserResponse(
+        id=updated_user.id,
+        name=updated_user.name,
+        email=auth.email,
+        profile_image=updated_user.profile_image,
+        region_id=updated_user.region_id,
+        wake_up_time=updated_user.wake_up_time,
+        notification_enabled=updated_user.notification_enabled,
+        created_at=updated_user.created_at,
+        is_profile_completed=updated_user.is_profile_completed  # ←追加
+    )
+    return success_response(jsonable_encoder(data), message="プロフィール更新成功")
