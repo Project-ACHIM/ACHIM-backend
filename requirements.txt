@@ -11,3 +11,5 @@ email-validator
 python-multipart
 requests
 apscheduler
+pydantic>=2.7
+pydantic-settings>=2.0
