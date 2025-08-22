@@ -1,5 +1,5 @@
 from datetime import date, timedelta
-from backend.services.weekly_tasks import run_weekly_tasks
+from backend.features.tasks.weekly_tasks import run_weekly_tasks
 from backend.db.models import Week, User, UserWeekPreference, Group, GroupMember
 from backend.db.session import get_db
 from backend.db.base import Base

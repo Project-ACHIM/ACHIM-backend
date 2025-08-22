@@ -61,7 +61,7 @@ def match_users_by_preference(db: Session):
     db.commit()
 
 
-def run_weekly_tasks():
+def run_weekly_tasks(db):
     db = SessionLocal()
     try:
         close_last_week_and_activate_new(db)
