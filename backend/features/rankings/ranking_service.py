@@ -7,7 +7,7 @@ from fastapi import HTTPException
 from backend.features.weeks.week_service import get_week_for_join
 from backend.db.models.tables.groups import Group
 from backend.db.models.tables.group_members import GroupMember
-from backend.db.models.tables.sp_records import SpRecord
+from backend.db.models.tables.sp_records import SPRecord
 from backend.db.models.tables.users import User
 from backend.db.models.tables.weeks import Week
 
@@ -43,31 +43,31 @@ def aggregate_group_sp(db: Session, group_id: int) -> List[Dict[str, Any]]:
     if not user_ids:
         return []
 
-    if hasattr(SpRecord, "week_id"):
+    if hasattr(SPRecord, "week_id"):
         q = (
             db.query(
-                SpRecord.user_id,
-                func.coalesce(func.sum(SpRecord.amount), 0).label("total_sp"),
+                SPRecord.user_id,
+                func.coalesce(func.sum(SPRecord.amount), 0).label("total_sp"),
             )
-            .filter(SpRecord.week_id == grp.week_id, SpRecord.user_id.in_(user_ids))
-            .group_by(SpRecord.user_id)
+            .filter(SPRecord.week_id == grp.week_id, SPRecord.user_id.in_(user_ids))
+            .group_by(SPRecord.user_id)
         )
     else:
-        # SpRecord に week_id が無い場合は、週の開始/終了日で created_at を絞る
+        # SPRecord に week_id が無い場合は、週の開始/終了日で created_at を絞る
         wk = db.query(Week).filter(Week.id == grp.week_id).first()
         if not wk:
             raise HTTPException(status_code=404, detail="週情報が見つかりません")
         q = (
             db.query(
-                SpRecord.user_id,
-                func.coalesce(func.sum(SpRecord.amount), 0).label("total_sp"),
+                SPRecord.user_id,
+                func.coalesce(func.sum(SPRecord.amount), 0).label("total_sp"),
             )
             .filter(
-                SpRecord.user_id.in_(user_ids),
-                SpRecord.created_at >= wk.start_date,
-                SpRecord.created_at < wk.end_date + timedelta(days=1),
+                SPRecord.user_id.in_(user_ids),
+                SPRecord.created_at >= wk.start_date,
+                SPRecord.created_at < wk.end_date + timedelta(days=1),
             )
-            .group_by(SpRecord.user_id)
+            .group_by(SPRecord.user_id)
         )
 
     rows = q.all()
