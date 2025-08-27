@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     MONDAY_JOIN_ONLY: bool = True        # 本番は True 推奨
     APP_TIMEZONE: str = "Asia/Tokyo"
 
+
+    ADMIN_API_KEY: str | None = None
     class Config:
         env_file = ".env"                # ここで .env を読む
 
