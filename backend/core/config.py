@@ -1,12 +1,21 @@
 # backend/core/config.py
-from dotenv import load_dotenv
-import os
+from pydantic_settings import BaseSettings
 
-load_dotenv()
+class Settings(BaseSettings):
+    # --- infra / IO ---
+    DATABASE_URL: str
+    UPLOAD_DIR: str = "backend/static/uploads"
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+    GROUP_MAX_MEMBERS: int = 5
 
-# 画像アップロード用ディレクトリ設定
-UPLOAD_DIR = os.getenv("UPLOAD_DIR")
+    # --- app behavior ---
+    APP_ENV: str = "production"          # "production" / "development"
+    MONDAY_JOIN_ONLY: bool = True        # 本番は True 推奨
+    APP_TIMEZONE: str = "Asia/Tokyo"
 
 
+    ADMIN_API_KEY: str | None = None
+    class Config:
+        env_file = ".env"                # ここで .env を読む
+
+settings = Settings()
