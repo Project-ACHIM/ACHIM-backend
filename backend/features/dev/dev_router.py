@@ -1,6 +1,7 @@
 from datetime import date, timedelta
 from fastapi import APIRouter, Depends, Header, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 
 from backend.core.config import settings
 from backend.db.session import get_db
@@ -15,7 +16,7 @@ router = APIRouter()
 
 from pydantic import BaseModel
 
-class TopupResponse(BaseModel):
+class TopupRequest(BaseModel):
     user_id: int
     amount: int
 
@@ -33,56 +34,70 @@ def bootstrap(
     username: str = "super_tester",
     bp_balance: int = 1_000_000,
     db: Session = Depends(get_db),
-    x_admin_key: str | None = Header(None)
+    x_admin_key: str | None = Header(None, alias="X-Admin-Key")
 ):
-    """今日を含む週/ユーザー/BPを作成して、すぐに参加テストできる状態にする"""
+    # 今日を含む週/ユーザー/BPを "1トランザクション" で作成 or 更新。 途中で失敗したら全てロールバックされる
     _require_dev_and_key(x_admin_key)
 
-    # 1) 今日を含むWeekを確保（なければ作成・active化）
-    today = date.today()
-    wk = (
-        db.query(Week)
-        .filter(Week.start_date <= today, Week.end_date >= today)
-        .first()
-    )
-    if not wk:
-        start = today - timedelta(days=today.weekday())  # 月曜
-        end = start + timedelta(days=6)                  # 日曜
-        wk = Week(start_date=start, end_date=end, status="active")
-        db.add(wk)
-        db.flush()
-    else:
-        # 開発では active に寄せておく
-        wk.status = "active"
-        db.add(wk)
+    try:
+        # トランザクション開始：成功で自動COMMIT、例外で自動ROLLBACK
+        with db.begin():
+            # 1) 今日を含む Week を確保（あれば active 化）
+            today = date.today()
+            # 競合に強くするなら with_for_update() を付けてもOK（同時実行が多い場合）
+            wk = (
+                db.query(Week)
+                # .with_for_update()  # ←必要に応じてロック
+                .filter(Week.start_date <= today, Week.end_date >= today)
+                .first()
+            )
+            if not wk:
+                start = today - timedelta(days=today.weekday())  # 月曜
+                end = start + timedelta(days=6)                  # 日曜
+                wk = Week(start_date=start, end_date=end, status="active")
+                db.add(wk)
+                db.flush()  # wk.id を確定
+            else:
+                wk.status = "active"
+                db.add(wk)
 
-    # 2) ユーザー確保
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        user = User(id=user_id, username=username)  # あなたのUserモデルの必須項目に合わせて調整
-        db.add(user)
-        db.flush()
+            # 2) ユーザー確保
+            user = db.query(User).filter(User.id == user_id).first()
+            if not user:
+                user = User(id=user_id, username=username)  # 必須項目が他にあれば追加
+                db.add(user)
+                db.flush()
 
-    # 3) BP口座を用意して残高セット
-    pt = db.query(Point).filter(Point.user_id == user.id).first()
-    if not pt:
-        pt = Point(user_id=user.id, bp_total=bp_balance)
-        db.add(pt)
-    else:
-        pt.bp_total = bp_balance
-        db.add(pt)
+            # 3) ポイント口座を作成/更新
+            pt = db.query(Point).filter(Point.user_id == user.id).first()
+            if not pt:
+                pt = Point(user_id=user.id, bp_total=bp_balance)
+                db.add(pt)
+            else:
+                pt.bp_total = bp_balance
+                db.add(pt)
 
-    db.commit()
-    return {
-        "message": "bootstrap完了",
-        "week_id": wk.id,
-        "user_id": user.id,
-        "bp_balance": pt.bp_total,
-    }
+            # ここで with db.begin(): のスコープを抜けると COMMIT される
+
+        # COMMIT 後の返却（ID は確定している）
+        return {
+            "message": "bootstrap完了",
+            "week_id": wk.id,
+            "user_id": user.id,
+            "bp_balance": pt.bp_total,
+        }
+
+    except IntegrityError:
+        # 一意制約などに引っかかった場合の見やすいエラーメッセージ
+        raise HTTPException(status_code=409, detail="一意制約エラー: 既に同一IDのユーザー等が存在します")
+    except Exception as e:
+        # db.begin() が例外で抜けた時点で ROLLBACK 済み
+        # ここでは開発用なので詳細をそのまま返してもOK（本番では隠蔽推奨）
+        raise HTTPException(status_code=500, detail=f"bootstrap失敗: {e}")
 
 @router.post("/topup_bp")
 def topup_bp(
-    req: TopupResponse,
+    req: TopupRequest,
     db: Session = Depends(get_db),
     x_admin_key: str | None = Header(None)
 ):
