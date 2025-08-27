@@ -13,6 +13,12 @@ from backend.db.models.tables.bp_entries import BpEntry
 
 router = APIRouter()
 
+from pydantic import BaseModel
+
+class TopupResponse(BaseModel):
+    user_id: int
+    amount: int
+
 def _require_dev_and_key(x_admin_key: str | None):
     if settings.APP_ENV != "development":
         raise HTTPException(status_code=403, detail="development環境のみ利用可能です")
@@ -76,21 +82,20 @@ def bootstrap(
 
 @router.post("/topup_bp")
 def topup_bp(
-    user_id: int,
-    amount: int = 100_000,
+    req: TopupResponse,
     db: Session = Depends(get_db),
     x_admin_key: str | None = Header(None)
 ):
     """任意ユーザーのBPを増やす（開発専用）"""
     _require_dev_and_key(x_admin_key)
-    pt = db.query(Point).filter(Point.user_id == user_id).first()
+    pt = db.query(Point).filter(Point.user_id == req.user_id).first()
     if not pt:
-        pt = Point(user_id=user_id, bp_total=0)
+        pt = Point(user_id=req.user_id, bp_total=0)
         db.add(pt)
         db.flush()
-    pt.bp_total = (pt.bp_total or 0) + amount
+    pt.bp_total = (pt.bp_total or 0) + req.amount
     db.commit()
-    return {"user_id": user_id, "bp_balance": pt.bp_total}
+    return {"user_id": req.user_id, "bp_balance": pt.bp_total}
 
 @router.post("/reset_membership")
 def reset_membership(
