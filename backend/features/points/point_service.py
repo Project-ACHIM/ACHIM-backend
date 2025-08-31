@@ -5,8 +5,12 @@ from typing import Optional
 from sqlalchemy.orm import Session
 from datetime import date
 from backend.features.points.point_constants import *
-from backend.features.points.sp_crud import *
-from backend.features.points.bp_crud import *
+from backend.features.points.sp_crud import (
+    add_sp_record, update_sp_record, get_sp_record_by_date, get_today_sp
+)
+from backend.features.points.bp_crud import (
+    get_current_bp, increase_bp, get_bet_entry, set_result_bp, add_ranking_reward_bp
+)
 
 # 現在のBP取得
 def fetch_current_bp(user_id: int, db: Session) -> int:
@@ -27,16 +31,15 @@ def add_bp_for_distance(user_id: int, distance_km: float, db:Session):
         increase_bp(user_id, bp, reason="distance", db=db)
 
 # 歩数＋距離による総合BP加算
-def add_bp_from_activity(user_id: int, steps: int, distance_km: float, db: Session):
+def add_bp_from_activity(user_id: int, steps: int,distance_km: float, db: Session ):
     step_units = steps // BP_WALK_UNIT
     step_bp = step_units * BP_WALK_GAIN
-
     run_units = int(distance_km // BP_RUN_UNIT)
     run_bp = run_units * BP_RUN_GAIN
-
     total_bp = step_bp + run_bp
     if total_bp > 0:
         increase_bp(user_id, total_bp, reason="activity", db=db)
+    return get_current_bp(user_id, db)
 
 # ランキング報酬のBP加算
 def add_bp_by_ranking_reward(user_id: int, week_id: int, rank: int, bp_reward: int, db: Session):

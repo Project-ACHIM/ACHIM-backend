@@ -11,6 +11,7 @@ from backend.db.models.tables.weeks import Week
 from backend.db.models.tables.groups import Group
 from backend.db.models.tables.group_members import GroupMember
 from backend.db.models.tables.bp_entries import BpEntry
+from backend.features.tasks.weekly_tasks import compute_mvp_awards
 
 router = APIRouter()
 
@@ -147,3 +148,9 @@ def reset_membership(
 
     db.commit()
     return {"message": "reset完了", "week_id": wk.id, "user_id": user_id}
+
+
+@router.post("/mvp/compute")
+def dev_compute_mvp(week_id: int, db: Session = Depends(get_db)):
+    compute_mvp_awards(db, week_id=week_id)
+    return {"ok": True, "message": f"Computed MVP awards for week {week_id}"}

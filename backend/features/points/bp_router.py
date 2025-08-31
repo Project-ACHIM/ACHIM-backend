@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from backend.db.session import get_db
 from backend.features.auth.auth_dependencies import get_current_user
@@ -11,6 +11,7 @@ router = APIRouter()
 # 現在のBP取得
 @router.get("/balance/{user_id}", response_model=BPBalanceResponse, responses={
     200: {"description": "現在のBP取得成功"},
+    401: {"description": "認証されていません（トークン不正/期限切れ）"},
     403: {"description": "他ユーザーのBPは取得できません"},
     404: {"description": "ユーザーが見つかりません"},
     500: {"description": "サーバーエラー"}
@@ -24,9 +25,10 @@ def get_current_bp(
     current = fetch_current_bp(user_id, db)
     return BPBalanceResponse(user_id=user_id, current_bp=current)
 
-# 歩数・距離によるBP加算
+# 歩数・距離によるBP加算（歩数/距離のみを使う）
 @router.post("/add", response_model=BPBalanceResponse, responses={
     200: {"description": "BP加算成功"},
+    400: {"description": "リクエストが不正です"},
     401: {"description": "認証されていません"},
     403: {"description": "不正なBP操作です"},
     500: {"description": "サーバーエラー"}
@@ -36,18 +38,23 @@ def add_bp(
     current_user = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    # 自分自身のみ操作可
     validate_user(request.user_id, current_user.id)
 
-    current_bp = add_bp_from_activity(
-        db=db,
+    if (request.steps or 0) <= 0 and (request.distance_km or 0.0) <= 0.0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="歩数または距離のいずれかを指定してください",
+        )
+
+    # サービスは“加算後の残高”を返す想定に統一
+    current_after = add_bp_from_activity(
         user_id=request.user_id,
-        week_id=request.week_id,
-        step_count=request.steps,
-        distance_km=request.distance_km,
-        mode=request.mode,
-        redemption=request.redemption
+        steps=request.steps or 0,
+        distance_km=request.distance_km or 0.0,
+        db=db,
     )
-    return BPBalanceResponse(user_id=request.user_id, current_bp=current_bp)
+    return BPBalanceResponse(user_id=request.user_id, current_bp=current_after)
 
 # BP減少（賭けや交換など）
 @router.post("/decrease", response_model=BPBalanceResponse, responses={
@@ -107,7 +114,7 @@ def add_bp_ranking_reward(
     current = fetch_current_bp(request.user_id, db)
     return BPBalanceResponse(user_id=request.user_id, current_bp=current)
 
-# MVP・起床・写真等のボーナスによるBP加算（現在は使わない）
+# MVP・起床・写真等のボーナス（BPでは使用しない想定）
 @router.post("/reward/bonus", response_model=BPBalanceResponse, responses={
     200: {"description": "ボーナス報酬によるBP加算成功"},
     400: {"description": "ユーザーが見つかりません"},
@@ -136,5 +143,3 @@ def add_bp_bonus_api(
 
     current = fetch_current_bp(request.user_id, db)
     return BPBalanceResponse(user_id=request.user_id, current_bp=current)
-
-
