@@ -27,16 +27,15 @@ def add_bp_for_distance(user_id: int, distance_km: float, db:Session):
         increase_bp(user_id, bp, reason="distance", db=db)
 
 # 歩数＋距離による総合BP加算
-def add_bp_from_activity(user_id: int, steps: int, distance_km: float, db: Session):
-    step_units = steps // BP_WALK_UNIT
+def add_bp_from_activity( db: Session,user_id: int,step_count: int,distance_km: float ):
+    step_units = step_count // BP_WALK_UNIT
     step_bp = step_units * BP_WALK_GAIN
-
     run_units = int(distance_km // BP_RUN_UNIT)
     run_bp = run_units * BP_RUN_GAIN
-
     total_bp = step_bp + run_bp
     if total_bp > 0:
         increase_bp(user_id, total_bp, reason="activity", db=db)
+    return get_current_bp(user_id, db)
 
 # ランキング報酬のBP加算
 def add_bp_by_ranking_reward(user_id: int, week_id: int, rank: int, bp_reward: int, db: Session):
