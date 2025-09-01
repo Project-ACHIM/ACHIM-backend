@@ -59,7 +59,7 @@ app.add_middleware(
 )
 
 # ルーター
-app.include_router(auth_router.router, prefix="/auth/mail", tags=["auth:mail"])
+app.include_router(auth_router.router, prefix="/auth", tags=["auth"])
 app.include_router(user_router.router, prefix="/users", tags=["users"])
 app.include_router(exchange_router.router, prefix="/tickets", tags=["tickets"])
 app.include_router(sp_router.router, prefix="/sp", tags=["SP"])
