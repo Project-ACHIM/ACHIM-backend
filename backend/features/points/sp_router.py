@@ -13,7 +13,7 @@ from backend.features.weeks.week_service import today_local
 router = APIRouter()
 
 # SP加算（差分）
-@router.post("/add", response_model=SPBalanceResponse, responses={
+@router.post("/add", response_model=SPChangeResponse, responses={
     200: {"description": "SP加算成功"},
     401: {"description": "認証されていません"},
     403: {"description": "不正なSP操作です"},
@@ -25,7 +25,9 @@ def add_sp(
     db: Session = Depends(get_db)
 ):
     validate_user(request.user_id, current_user.id)
-    current_sp = add_sp_from_activity(
+
+    # 今回加算された「差分」だけが返る（delta）
+    delta = add_sp_from_activity(
         db=db,
         user_id=request.user_id,
         week_id=request.week_id,
@@ -34,7 +36,18 @@ def add_sp(
         mode=request.mode.value,
         redemption=request.redemption
     )
-    return SPBalanceResponse(user_id=request.user_id, current_sp=current_sp)
+
+    # 最新の本日合計・週合計を取得して返す
+    today_total = get_today_sp(user_id=request.user_id, week_id=request.week_id, db=db)
+    week_total  = get_weeks_sp_total(user_id=request.user_id, week_id=request.week_id, db=db)
+
+    return SPChangeResponse(
+        user_id=request.user_id,
+        delta_sp=delta,
+        today_total_sp=today_total,
+        week_total_sp=week_total
+    )
+
 
 
 # 今日のSP取得量
@@ -92,7 +105,7 @@ def get_sp_breakdown_api(
 
 
 # イベント系SP加算（MVP・Wake・Photo）
-@router.post("/event", response_model=SPBalanceResponse, responses={
+@router.post("/event", response_model=SPChangeResponse, responses={
     200: {"description": "イベントSP加算成功"},
     403: {"description": "不正なSP操作です"},
     500: {"description": "サーバーエラー"}
@@ -103,7 +116,9 @@ def add_event_sp_api(
     db: Session = Depends(get_db)
 ):
     validate_user(request.user_id, current_user.id)
-    sp = add_sp_by_mode(
+
+    # ここも「今回加算分（delta）」が返る
+    delta = add_sp_by_mode(
         user_id=request.user_id,
         week_id=request.week_id,
         mode=request.mode,
@@ -112,4 +127,13 @@ def add_event_sp_api(
         redemption=False,
         db=db
     )
-    return SPBalanceResponse(user_id=request.user_id, current_sp=sp)
+
+    today_total = get_today_sp(user_id=request.user_id, week_id=request.week_id, db=db)
+    week_total  = get_weeks_sp_total(user_id=request.user_id, week_id=request.week_id, db=db)
+
+    return SPChangeResponse(
+        user_id=request.user_id,
+        delta_sp=delta,
+        today_total_sp=today_total,
+        week_total_sp=week_total
+    )
