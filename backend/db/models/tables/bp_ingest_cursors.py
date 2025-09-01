@@ -8,7 +8,6 @@ class BpIngestCursor(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     date = Column(Date, nullable=False)  # アプリTZでの“その日”
-    device_id = Column(String(64), nullable=True)
 
     # 最後に処理した“単位数”（歩・距離で割った整数）を保持
     last_walk_units = Column(Integer, default=0, nullable=False)
@@ -21,6 +20,6 @@ class BpIngestCursor(Base):
     updated_at = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now())
 
     __table_args__ = (
-        UniqueConstraint("user_id", "date", "device_id", name="uq_bp_cursor_user_date_device"),
+        UniqueConstraint("user_id", "date", name="uq_bp_cursor_user_date"),
         Index("idx_bp_cursor_user_date", "user_id", "date"),
     )
