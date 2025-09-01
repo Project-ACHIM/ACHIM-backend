@@ -7,6 +7,7 @@ from backend.features.auth.auth_dependencies import get_current_user
 from backend.utils.utils import validate_user
 from backend.features.points.sp_schemas import *
 from backend.features.points.point_service import *
+from backend.features.weeks.week_service import today_local
 
 router = APIRouter()
 
@@ -84,7 +85,7 @@ def get_sp_breakdown_api(
 ):
     validate_user(user_id, current_user.id)
     if target_date is None:
-        target_date = date.today()
+        target_date = today_local()
     breakdown = get_sp_breakdown_by_date(user_id, week_id, target_date, db)
     return SPBreakdownResponse(user_id=user_id, breakdown=breakdown)
 
