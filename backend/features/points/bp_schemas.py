@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field
 from enum import Enum
 from typing import Literal
 from pydantic import ConfigDict
+from datetime import date
 
 # BP減少の理由を定義
 class BPDecreaseReason(str, Enum):
@@ -53,3 +54,13 @@ class BPBonusRequest(BaseModel):
     reason: BPBonusReason = Field(..., description="報酬の種類")
     detail: str | None = Field(None, description="補足情報（例：起床時間やイベント名など）")
 
+class BPIngestRequest(BaseModel):
+    # HealthKitなどの「当日累積」を送るためのエンドポイント用。
+    # サーバ側がカーソルで差分化して加点。
+    user_id: int = Field(..., description="ユーザーID")
+    steps_total: int = Field(0, ge=0, description="当日累積の歩数（0以上）")
+    distance_total_km: float = Field(0.0, ge=0, description="当日累積の距離（km, 0以上）")
+    device_id: str | None = Field(None, description="送信端末識別子（任意。複数端末時に差分混在を防ぐ）")
+    sent_date: date | None = Field(None, description="アプリTZでの当日日付。未指定ならサーバで“今日”を採用")
+
+    model_config = ConfigDict(extra="ignore")
