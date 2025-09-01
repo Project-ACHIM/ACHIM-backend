@@ -7,6 +7,7 @@ from backend.features.auth.auth_dependencies import get_current_user
 from backend.utils.utils import validate_user
 from backend.features.points.sp_schemas import *
 from backend.features.points.point_service import *
+from backend.features.points.sp_crud import get_today_sp, get_weeks_sp_total, get_sp_breakdown_by_date
 from backend.features.weeks.week_service import today_local
 
 router = APIRouter()
