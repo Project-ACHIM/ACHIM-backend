@@ -26,7 +26,7 @@ def get_current_bp(
     return BPBalanceResponse(user_id=user_id, current_bp=current)
 
 # 歩数・距離によるBP加算（歩数/距離のみを使う）
-@router.post("/add", response_model=BPBalanceResponse, responses={
+@router.post("/add", response_model=BPChangeResponse, responses={
     200: {"description": "BP加算成功"},
     400: {"description": "リクエストが不正です"},
     401: {"description": "認証されていません"},
@@ -47,14 +47,48 @@ def add_bp(
             detail="歩数または距離のいずれかを指定してください",
         )
 
-    # サービスは“加算後の残高”を返す想定に統一
-    current_after = add_bp_from_activity(
+    # 差分算出：呼び出し前後の残高差分を delta として返す
+    before = fetch_current_bp(request.user_id, db)
+    after = add_bp_from_activity(
         user_id=request.user_id,
         steps=request.steps or 0,
         distance_km=request.distance_km or 0.0,
         db=db,
     )
-    return BPBalanceResponse(user_id=request.user_id, current_bp=current_after)
+    delta = after - before
+    return BPChangeResponse(user_id=request.user_id, delta_bp=delta, current_bp=after)
+
+# 累積（HealthKit）インジェスト
+@router.post("/ingest", response_model=BPChangeResponse, responses={
+    200: {"description": "累積データを反映しBPを加算（差分）しました"},
+    400: {"description": "リクエストが不正です"},
+    401: {"description": "認証されていません"},
+    403: {"description": "不正なBP操作です"},
+    500: {"description": "サーバーエラー"}
+})
+def ingest_bp_cumulative(
+    request: BPIngestRequest,
+    current_user = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    validate_user(request.user_id, current_user.id)
+
+    if (request.steps_total or 0) < 0 or (request.distance_total_km or 0.0) < 0.0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="累積の歩数/距離は0以上で指定してください",
+        )
+
+    before = fetch_current_bp(request.user_id, db)
+    after = add_bp_from_cumulative(
+        db=db,
+        user_id=request.user_id,
+        steps_total=request.steps_total or 0,
+        distance_total_km=request.distance_total_km or 0.0,
+        sent_date=request.sent_date,
+    )
+    delta = after - before
+    return BPChangeResponse(user_id=request.user_id, delta_bp=delta, current_bp=after)
 
 # BP減少（賭けや交換など）
 @router.post("/decrease", response_model=BPBalanceResponse, responses={
