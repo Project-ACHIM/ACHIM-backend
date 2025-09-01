@@ -32,6 +32,12 @@ class BPBalanceResponse(BaseModel):
     user_id: int
     current_bp: int
 
+# BP増減量と最新残高を返すレスポンス
+class BPChangeResponse(BaseModel):
+    user_id: int
+    delta_bp: int = Field(..., description="今回増減したBP")
+    current_bp: int = Field(..., description="変更後のBP残高")
+
 # ランキング報酬によるBP増加リクエスト
 class BPRewardFromRankingRequest(BaseModel):
     user_id: int = Field(..., description="ユーザーID")
@@ -54,13 +60,11 @@ class BPBonusRequest(BaseModel):
     reason: BPBonusReason = Field(..., description="報酬の種類")
     detail: str | None = Field(None, description="補足情報（例：起床時間やイベント名など）")
 
+# HealthKitなどの「当日累積」を送るためのエンドポイント用。
+# サーバ側がカーソルで差分化して加点。
 class BPIngestRequest(BaseModel):
-    # HealthKitなどの「当日累積」を送るためのエンドポイント用。
-    # サーバ側がカーソルで差分化して加点。
     user_id: int = Field(..., description="ユーザーID")
-    steps_total: int = Field(0, ge=0, description="当日累積の歩数（0以上）")
-    distance_total_km: float = Field(0.0, ge=0, description="当日累積の距離（km, 0以上）")
-    device_id: str | None = Field(None, description="送信端末識別子（任意。複数端末時に差分混在を防ぐ）")
-    sent_date: date | None = Field(None, description="アプリTZでの当日日付。未指定ならサーバで“今日”を採用")
-
+    steps_total: int = Field(0, description="当日累積の歩数（0以上）")
+    distance_total_km: float = Field(0.0, description="当日累積の距離（km, 0以上）")
+    sent_date: date | None = Field(None, description="アプリTZでの当日日付。未指定ならサーバで“今日”")
     model_config = ConfigDict(extra="ignore")
