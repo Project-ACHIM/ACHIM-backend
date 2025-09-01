@@ -14,3 +14,8 @@ class SPRecord(Base):
     created_at = Column(DateTime, server_default=func.now())
 
     user = relationship("User", back_populates="sp_records")
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "week_id", "date", "mode", name="uq_sp_user_week_date_mode"),
+        Index("idx_sp_user_week_date", "user_id", "week_id", "date"),
+    )
