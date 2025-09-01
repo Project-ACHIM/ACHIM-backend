@@ -9,7 +9,6 @@ class GroupCategory(str, Enum):
 BetBP = Annotated[int, Field(ge=100, le=10_000, description="賭けBPは100〜10,000pt")]
 
 class JoinRequest(BaseModel):
-    user_id: int
     category: GroupCategory
     bet_bp: BetBP
 

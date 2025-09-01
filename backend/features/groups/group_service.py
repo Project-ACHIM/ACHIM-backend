@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from backend.features.weeks.week_service import get_week_for_join, require_monday_if_production
 from backend.features.groups.group_crud import is_user_joined_in_week, join_week_category
-from backend.features.groups.group_schemas import GroupCategory
+from backend.features.groups.group_schemas import GroupCategory, JoinResponse, StatusResponse
 from backend.features.points.point_service import decrease_bp_logic
 from backend.db.models.tables.points import Point
 from backend.db.models.tables.bp_entries import BpEntry
@@ -44,16 +44,16 @@ def join_group(db: Session, user_id: int, category: GroupCategory, bet_bp: int):
     create_bet_entry(db, user_id=user_id, group_id=group.id, bet_bp=bet_bp)
 
     pt = db.query(Point).filter(Point.user_id == user_id).first()
-    return {
-        "message": "参加が完了しました",
-        "week_id": week.id,
-        "group_id": group.id,
-        "category": category,
-        "bet_bp": bet_bp,
-        "bp_balance": pt.bp_total if pt else 0,
-    }
+    return JoinResponse(
+        message="参加が完了しました",
+        week_id=week.id,
+        group_id=group.id,
+        category=category,
+        bet_bp=bet_bp,
+        bp_balance=pt.bp_total if pt else 0,
+    )
 
 def get_join_status(db: Session, user_id: int):
     week = get_week_for_join(db)
     joined = is_user_joined_in_week(db, user_id, week.id)
-    return {"week_id": week.id, "is_joined": joined}
+    return StatusResponse(week_id=week.id, is_joined=joined)
