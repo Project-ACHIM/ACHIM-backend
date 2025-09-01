@@ -24,7 +24,6 @@ def add_bp_from_cumulative(
     user_id: int,
     steps_total: int,
     distance_total_km: float,
-    device_id: str | None = None,
     sent_date: date | None = None,
 ) -> int:
     """
@@ -39,13 +38,11 @@ def add_bp_from_cumulative(
     new_walk_units = steps_total // BP_WALK_UNIT
     new_run_units = int(distance_total_km // BP_RUN_UNIT)
 
-    cur = get_cursor(db, user_id, on_date, device_id)
+    cur = get_cursor(db, user_id, on_date)
     if cur is None:
-        # 初回：累積ぶんを丸ごと“単位換算”で付与
         delta_walk_units = new_walk_units
         delta_run_units  = new_run_units
     else:
-        # 通常：単位差分のみ
         delta_walk_units = max(new_walk_units - cur.last_walk_units, 0)
         delta_run_units  = max(new_run_units  - cur.last_run_units, 0)
 
@@ -58,7 +55,6 @@ def add_bp_from_cumulative(
         db=db,
         user_id=user_id,
         on_date=on_date,
-        device_id=device_id,
         last_walk_units=new_walk_units,
         last_run_units=new_run_units,
         last_steps_total=steps_total,
