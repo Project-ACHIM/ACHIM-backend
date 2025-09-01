@@ -15,4 +15,4 @@ from backend.db.models.tables.discount_tickets import DiscountTicket
 from backend.db.models.tables.bp_entries import BpEntry
 from backend.db.models.tables.user_week_preference import UserWeekPreference
 from backend.db.models.tables.mvp_awards import MVPAward
-
+from backend.db.models.tables.bp_ingest_cursors import BpIngestCursor
