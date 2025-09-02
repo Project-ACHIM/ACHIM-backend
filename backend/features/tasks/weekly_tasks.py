@@ -102,7 +102,7 @@ def compute_mvp_awards(db: Session, week_id: int):
     if attendance:
         _upsert_award(db, week_id, attendance.user_id, "attendance_full", int(attendance.active_days), MVP_AWARD_SP_BONUS)
 
-def run_weekly_tasks():
+def run_weekly_tasks(db):
     db = SessionLocal()
     try:
         close_last_week_and_activate_new(db)
