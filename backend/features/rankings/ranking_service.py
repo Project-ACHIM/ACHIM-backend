@@ -61,7 +61,7 @@ def aggregate_group_sp(db: Session, group_id: int) -> List[Dict[str, Any]]:
         enriched.append(
             {
                 "user_id": uid,
-                "username": uname_map.get(uid, f"user-{uid}"),
+                "username": (uname_map.get(uid) or f"user-{uid}"),
                 "total_sp": totals.get(uid, 0),
             }
         )
@@ -155,7 +155,7 @@ def aggregate_group_sp_with_mvp(db: Session, group_id: int) -> List[Dict[str, An
         adjusted = base + bonus
         enriched.append({
             "user_id": uid,
-            "username": name_map.get(uid, f"user-{uid}"),
+            "username": (name_map.get(uid) or f"user-{uid}"),
             "total_sp": base,
             "bonus_sp": bonus,
             "final_result_sp": adjusted,
@@ -163,12 +163,13 @@ def aggregate_group_sp_with_mvp(db: Session, group_id: int) -> List[Dict[str, An
 
     # 最終順位は final_result_sp で決定
     enriched.sort(key=lambda x: (-x["final_result_sp"], x["user_id"]))
-    rank = 1
+    rank = 0
+    prev = None
     for i, item in enumerate(enriched):
-        if i > 0 and item["final_result_sp"] < enriched[i - 1]["final_result_sp"]:
-            rank = i + 1
+        if prev is None or item["final_result_sp"] < prev:
+            rank += 1
+            prev = item["final_result_sp"]
         item["rank"] = rank
-    return enriched
 
 
 def get_group_final_ranking(db: Session, group_id: int):
@@ -278,14 +279,12 @@ def get_group_weekly_ranking_my_and_all(
     # my 抽出（見つからない場合は rank=末尾/total_sp=0 として扱う）
     my_row = next((m for m in board if m["user_id"] == viewer_user_id), None)
     if my_row is None:
-        # 念のため（メンバーなのに board にいない＝SP 0 で未出現、など）
-        # rank は末尾+1（競技会順位なら board の最後の rank を踏襲）
-        last_rank = board[-1]["rank"] if board else 1
+        uname = db.query(User.name).filter(User.id == viewer_user_id).scalar()
         my_row = {
             "user_id": viewer_user_id,
-            "username": db.query(User.name).filter(User.id == viewer_user_id).scalar() or f"user-{viewer_user_id}",
+            "username": (uname or f"user-{viewer_user_id}"),
             "total_sp": 0,
-            "rank": last_rank + 1 if board else 1,
+            "rank": (board[-1]["rank"] + 1) if board else 1,
         }
 
     # ranks ページング（必要な場合のみ）
@@ -295,7 +294,7 @@ def get_group_weekly_ranking_my_and_all(
     def to_rank_item(r: Dict[str, Any]) -> Dict[str, Any]:
         return {
             "user_id": r["user_id"],
-            "display_name": r["username"],
+            "display_name": (r.get("username") or f"user-{r['user_id']}"),
             "total_sp": int(r["total_sp"]),
             "rank": int(r["rank"]),
             "avatar_url": None,
@@ -307,4 +306,32 @@ def get_group_weekly_ranking_my_and_all(
         "category": grp.category,
         "my": to_rank_item(my_row),
         "ranks": [to_rank_item(r) for r in paged],
+    }
+
+def get_group_ranking_secured(db: Session, viewer_user_id: int, group_id: int):
+    grp = db.query(Group).filter(Group.id == group_id).first()
+    if not grp:
+        raise HTTPException(status_code=404, detail="グループが見つかりません")
+    _ensure_member(db, viewer_user_id, group_id)
+    board = aggregate_group_sp(db, group_id)
+    return {
+        "week_id": grp.week_id,
+        "group_id": grp.id,
+        "category": grp.category,
+        "members": board,
+        "is_final": False,
+    }
+
+def get_group_final_ranking_secured(db: Session, viewer_user_id: int, group_id: int):
+    grp = db.query(Group).filter(Group.id == group_id).first()
+    if not grp:
+        raise HTTPException(status_code=404, detail="グループが見つかりません")
+    _ensure_member(db, viewer_user_id, group_id)
+    board = aggregate_group_sp_with_mvp(db, group_id)
+    return {
+        "week_id": grp.week_id,
+        "group_id": grp.id,
+        "category": grp.category,
+        "members": board,
+        "is_final": True,
     }
