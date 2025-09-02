@@ -1,10 +1,27 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from backend.db.session import get_db
 from backend.features.rankings.ranking_service import *
 from backend.features.rankings.ranking_schemas import *
+from backend.features.auth.auth_dependencies import get_current_user
 
 router = APIRouter()
+@router.get("/group/weekly", response_model=GroupWeeklyRankingResponse)
+def group_weekly_ranking(
+    group_id: int,
+    limit: int = Query(100, ge=1, le=500),
+    offset: int = Query(0, ge=0),
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user),
+):
+    return get_group_weekly_ranking_my_and_all(
+        db=db,
+        viewer_user_id=current_user.id,
+        group_id=group_id,
+        limit=limit,
+        offset=offset,
+    )
+
 
 @router.get("/me", response_model=GroupRankingResponse)
 def my_ranking(user_id: int, db: Session = Depends(get_db)):

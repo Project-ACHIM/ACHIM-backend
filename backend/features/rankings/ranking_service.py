@@ -70,10 +70,12 @@ def aggregate_group_sp(db: Session, group_id: int) -> List[Dict[str, Any]]:
     enriched.sort(key=lambda x: (-x["total_sp"], x["user_id"]))
 
     # 競技会方式の順位付け（同点同順位）
-    rank = 1
+    rank = 0
+    prev = None
     for i, item in enumerate(enriched):
-        if i > 0 and item["total_sp"] < enriched[i - 1]["total_sp"]:
-            rank = i + 1
+        if prev is None or item["total_sp"] < prev:
+            rank += 1
+            prev = item["total_sp"]
         item["rank"] = rank
 
     return enriched
@@ -245,3 +247,64 @@ def get_mvp_preview(db: Session, week_id: int):
             r["notes"] = "暫定1位（最終日に確定します）"
             cands.append(r)
     return {"week_id": week_id, "candidates": cands, "is_final": False}
+
+
+def _ensure_member(db: Session, user_id: int, group_id: int):
+    exists = (
+        db.query(GroupMember)
+        .filter(GroupMember.group_id == group_id, GroupMember.user_id == user_id)
+        .first()
+    )
+    if not exists:
+        raise HTTPException(status_code=403, detail="当該グループのメンバーではありません")
+    
+# --- 追加: my + ranks を返すラッパ ---
+def get_group_weekly_ranking_my_and_all(
+    db: Session,
+    viewer_user_id: int,
+    group_id: int,
+    limit: int = 100,
+    offset: int = 0,
+):
+    # グループ存在と所属チェック
+    grp = db.query(Group).filter(Group.id == group_id).first()
+    if not grp:
+        raise HTTPException(status_code=404, detail="グループが見つかりません")
+    _ensure_member(db, viewer_user_id, group_id)
+
+    # 週累積SPランキングを取得（全員分）
+    board = aggregate_group_sp(db, group_id)  # [{user_id, username, total_sp, rank}, …]
+
+    # my 抽出（見つからない場合は rank=末尾/total_sp=0 として扱う）
+    my_row = next((m for m in board if m["user_id"] == viewer_user_id), None)
+    if my_row is None:
+        # 念のため（メンバーなのに board にいない＝SP 0 で未出現、など）
+        # rank は末尾+1（競技会順位なら board の最後の rank を踏襲）
+        last_rank = board[-1]["rank"] if board else 1
+        my_row = {
+            "user_id": viewer_user_id,
+            "username": db.query(User.name).filter(User.id == viewer_user_id).scalar() or f"user-{viewer_user_id}",
+            "total_sp": 0,
+            "rank": last_rank + 1 if board else 1,
+        }
+
+    # ranks ページング（必要な場合のみ）
+    paged = board[offset: offset + limit] if (offset or limit) else board
+
+    # レスポンス成形（UI用のキー名に合わせて）
+    def to_rank_item(r: Dict[str, Any]) -> Dict[str, Any]:
+        return {
+            "user_id": r["user_id"],
+            "display_name": r["username"],
+            "total_sp": int(r["total_sp"]),
+            "rank": int(r["rank"]),
+            "avatar_url": None,
+        }
+
+    return {
+        "week_id": grp.week_id,
+        "group_id": grp.id,
+        "category": grp.category,
+        "my": to_rank_item(my_row),
+        "ranks": [to_rank_item(r) for r in paged],
+    }
