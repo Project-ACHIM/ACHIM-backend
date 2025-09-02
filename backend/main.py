@@ -6,9 +6,17 @@ from fastapi.middleware.cors import CORSMiddleware
 # Routers
 from backend.features.auth import auth_router
 from backend.features.exchange import exchange_router
+
+from backend.db.base import Base
+from backend.db.session import engine, SessionLocal
+from backend.db import models
+from backend.features.auth import auth_google
+
 from backend.features.points import bp_router, sp_router
-from backend.features.rankings import history, ranking_router
+from backend.features.rankings import ranking_router
+from backend.features.rankings import history
 from backend.features.users import user_router
+
 from backend.features.photo_event import photo_router, upload_router
 from backend.features.auth import auth_google  # 使っていれば残す
 
@@ -19,11 +27,16 @@ from backend.db import models  # モデル定義の読み込み（副作用で�
 from backend.db.set_up import setUp_regions, init_weeks_if_empty
 
 # Tasks (ジョブ本体は db を引数に取る想定)
+
+from backend.features.groups import group_router
+from backend.features.dev import dev_router
+
 from backend.features.tasks.monthly_tasks import generate_next_month_weeks
 from backend.features.tasks.weekly_tasks import run_weekly_tasks
 
 # Scheduler
 from apscheduler.schedulers.background import BackgroundScheduler
+
 from apscheduler.triggers.cron import CronTrigger
 
 import logging
@@ -35,6 +48,13 @@ logger = logging.getLogger(__name__)
 # ============================================================
 scheduler = BackgroundScheduler(timezone="Asia/Tokyo")
 
+from contextlib import asynccontextmanager
+from backend.db.set_up import setUp_regions, init_weeks_if_empty
+from sqlalchemy.orm import Session
+from fastapi.middleware.cors import CORSMiddleware
+from backend.core.middleware import ErrorHandlingMiddleware, LoggingMiddleware
+
+
 # ============================================================
 # 変更点2: 毎回セッションを開閉するラッパーを用意
 # ============================================================
@@ -44,6 +64,7 @@ def weekly_job():
         run_weekly_tasks(db)  # ← ここは引数が db のままでOK
     finally:
         db.close()
+
 
 def monthly_job():
     db = SessionLocal()
@@ -105,15 +126,22 @@ async def lifespan(app: FastAPI):
 # ============================================================
 # FastAPI アプリ本体
 # ============================================================
+
 app = FastAPI(lifespan=lifespan)
+
+app.add_middleware(LoggingMiddleware)
+app.add_middleware(ErrorHandlingMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # TODO: 後で必要なオリジンに絞る
+
+    allow_origins=["*"],
+
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 # ルーター登録
 app.include_router(auth_router.router,    prefix="/auth/mail", tags=["auth:mail"])
@@ -131,3 +159,6 @@ from backend.features.groups import group_service
 app.include_router(group_service.router,  prefix="/groups",    tags=["members"])
 
 
+
+# 管理者用（開発用）ルーター
+app.include_router(dev_router.router, prefix="/dev", tags=["dev"])

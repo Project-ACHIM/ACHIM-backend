@@ -1,48 +1,59 @@
-from http.client import HTTPException
-from fastapi import APIRouter, HTTPException
-from fastapi.responses import JSONResponse
-from backend.db.models import Group, GroupMember
+from fastapi import HTTPException
+from sqlalchemy.orm import Session
 
+from backend.features.weeks.week_service import get_week_for_join, require_monday_if_production
+from backend.features.groups.group_crud import is_user_joined_in_week, join_week_category
+from backend.features.groups.group_schemas import GroupCategory, JoinResponse, StatusResponse
+from backend.features.points.point_service import decrease_bp_logic
+from backend.db.models.tables.points import Point
+from backend.db.models.tables.bp_entries import BpEntry
 
-router = APIRouter()
+def ensure_enough_bp(db: Session, user_id: int, bet_bp: int):
+    pt = db.query(Point).filter(Point.user_id == user_id).first()
+    if not pt or (pt.bp_total or 0) < bet_bp:
+        raise HTTPException(status_code=400, detail="BP残高が不足しています")
 
-# 所属しているgroupIDを取得
-def get_group_id(db, user_id):
-    group_member = db.query(GroupMember).filter(GroupMember.user_id == user_id).first()
-    if not group_member:
-        raise HTTPException(status_code=404, detail="User not in any group")
+def create_bet_entry(db: Session, user_id: int, group_id: int, bet_bp: int):
+    entry = BpEntry(user_id=user_id, group_id=group_id, bet_bp=bet_bp, result_bp=0)
+    db.add(entry)
+    db.commit()
+    db.refresh(entry)
+    return entry
 
-    group_id = group_member.group_id # group_idを取得
-    return group_id
+def join_group(db: Session, user_id: int, category: GroupCategory, bet_bp: int):
+    """
+    参加の単一入口:
+      - 本番: 月曜のみ判定
+      - 週の決定（active or 今日の週）
+      - 同週重複参加チェック
+      - BP残高確認→BET減算
+      - 週×カテゴリの空きグループへ参加（無ければ新規）
+      - 賭けBPの履歴記録
+      - 参加結果を返却
+    """
+    require_monday_if_production()
+    week = get_week_for_join(db)
 
-# 所属しているgroupからweek.idを返す
-def get_week_id(db, group_id):
-    group = db.query(Group).filter(Group.id == group_id).first()
-    week_id = group.week_id
-    return week_id
+    if is_user_joined_in_week(db, user_id, week.id):
+        raise HTTPException(status_code=400, detail="既に今週のグループに参加しています")
 
-# groupmenberに所属しているuser.idをjsonで返す(自分を除く）
-@router.get("/{user_id}/members")
-def get_group_menbers(db, user_id):
+    ensure_enough_bp(db, user_id, bet_bp)
+    decrease_bp_logic(db, user_id=user_id, amount=bet_bp, reason="BET", detail=f"{category.value}参加")
 
-    # group_idを取得
-    group_member = db.query(GroupMember).filter(GroupMember.user_id == user_id).first()
-    if not group_member:
-        raise HTTPException(status_code=404, detail="User not in any group")
+    group = join_week_category(db, user_id=user_id, week_id=week.id, category=category.value)
+    create_bet_entry(db, user_id=user_id, group_id=group.id, bet_bp=bet_bp)
 
-    group_id = group_member.group_id
-
-    # 同じグループの他メンバーのuser.idを取得(自分を除く)
-    other_user_ids = (
-        db.query(GroupMember.user_id)
-        .filter(GroupMember.group_id == group_id)
-        .filter(GroupMember.user_id != user_id)
-        .all()
+    pt = db.query(Point).filter(Point.user_id == user_id).first()
+    return JoinResponse(
+        message="参加が完了しました",
+        week_id=week.id,
+        group_id=group.id,
+        category=category,
+        bet_bp=bet_bp,
+        bp_balance=pt.bp_total if pt else 0,
     )
-    user_ids = [uid for (uid,) in other_user_ids]  # unpack
-    user_dict = {uid: uid for uid in user_ids}
-    print(user_dict)
 
-    # {"uid":uid, ...}の形で返す
-    return JSONResponse(content=user_dict)
-    
+def get_join_status(db: Session, user_id: int):
+    week = get_week_for_join(db)
+    joined = is_user_joined_in_week(db, user_id, week.id)
+    return StatusResponse(week_id=week.id, is_joined=joined)

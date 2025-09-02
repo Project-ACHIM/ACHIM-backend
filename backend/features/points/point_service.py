@@ -5,11 +5,63 @@ from typing import Optional
 from sqlalchemy.orm import Session
 from datetime import date
 from backend.features.points.point_constants import *
-from backend.features.points.sp_crud import *
-from backend.features.points.bp_crud import *
+from backend.features.points.sp_crud import (
+    add_sp_record, update_sp_record, get_sp_record_by_date, get_today_sp
+)
+from backend.features.points.bp_crud import (
+    get_current_bp, increase_bp, get_bet_entry, set_result_bp, add_ranking_reward_bp
+)
+from backend.features.points.bp_cursor_crud import get_cursor, upsert_cursor
+from backend.features.weeks.week_service import today_local
+
 
 # 現在のBP取得
 def fetch_current_bp(user_id: int, db: Session) -> int:
+    return get_current_bp(user_id, db)
+
+def add_bp_from_cumulative(
+    db: Session,
+    user_id: int,
+    steps_total: int,
+    distance_total_km: float,
+    sent_date: date | None = None,
+) -> int:
+    """
+    累積（当日トータル）から“単位差分のみ”を加算。
+    - 端末リトライや順不同にも耐性あり
+    - 当日が変わればカーソルは日付キーで自然リセット
+    """
+    # アプリのTZでの“今日”
+    on_date = sent_date or today_local()
+
+    # 現在の累積から “単位数” を計算
+    new_walk_units = steps_total // BP_WALK_UNIT
+    new_run_units = int(distance_total_km // BP_RUN_UNIT)
+
+    cur = get_cursor(db, user_id, on_date)
+    if cur is None:
+        delta_walk_units = new_walk_units
+        delta_run_units  = new_run_units
+    else:
+        delta_walk_units = max(new_walk_units - cur.last_walk_units, 0)
+        delta_run_units  = max(new_run_units  - cur.last_run_units, 0)
+
+    bp_gain = delta_walk_units * BP_WALK_GAIN + delta_run_units * BP_RUN_GAIN
+    if bp_gain > 0:
+        increase_bp(user_id, bp_gain, reason="activity", db=db)
+
+    # カーソル更新
+    upsert_cursor(
+        db=db,
+        user_id=user_id,
+        on_date=on_date,
+        last_walk_units=new_walk_units,
+        last_run_units=new_run_units,
+        last_steps_total=steps_total,
+        last_distance_total_km=distance_total_km,
+    )
+
+    # 最新残高を返却
     return get_current_bp(user_id, db)
 
 # 歩数に応じたBP加算
@@ -27,16 +79,15 @@ def add_bp_for_distance(user_id: int, distance_km: float, db:Session):
         increase_bp(user_id, bp, reason="distance", db=db)
 
 # 歩数＋距離による総合BP加算
-def add_bp_from_activity(user_id: int, steps: int, distance_km: float, db: Session):
+def add_bp_from_activity(user_id: int, steps: int,distance_km: float, db: Session ):
     step_units = steps // BP_WALK_UNIT
     step_bp = step_units * BP_WALK_GAIN
-
     run_units = int(distance_km // BP_RUN_UNIT)
     run_bp = run_units * BP_RUN_GAIN
-
     total_bp = step_bp + run_bp
     if total_bp > 0:
         increase_bp(user_id, total_bp, reason="activity", db=db)
+    return get_current_bp(user_id, db)
 
 # ランキング報酬のBP加算
 def add_bp_by_ranking_reward(user_id: int, week_id: int, rank: int, bp_reward: int, db: Session):
@@ -100,23 +151,33 @@ def get_unit_info(
     redemption: bool,
     step_count: int,
     distance_km: float
-) -> tuple[int, int, int, str, dict]:
-    config_map = {
-        ("walking", False): (SP_WALK_UNIT, SP_WALK_GAIN, step_count, "walk"),
-        ("walking", True):  (SP_WALK_RDM_UNIT, SP_WALK_RDM_GAIN, step_count, "walk"),
-        ("running", False): (SP_RUN_UNIT, SP_RUN_GAIN, distance_km, "distance"),
-        ("running", True):  (SP_RUN_RDM_UNIT, SP_RUN_RDM_GAIN, distance_km, "distance")
-    }
-
-    config = config_map.get((mode, redemption))
-    if not config:
+) -> tuple[str, int, int, int, str, dict]:
+    if mode == "walking":
+        record_mode = "walking_rdm" if redemption else "walking"
+        unit  = SP_WALK_RDM_UNIT if redemption else SP_WALK_UNIT
+        gain  = SP_WALK_RDM_GAIN if redemption else SP_WALK_GAIN
+        value = step_count
+        key   = "walk"
+    elif mode == "running":
+        record_mode = "running_rdm" if redemption else "running"
+        unit  = SP_RUN_RDM_UNIT if redemption else SP_RUN_UNIT
+        gain  = SP_RUN_RDM_GAIN if redemption else SP_RUN_GAIN
+        value = distance_km
+        key   = "distance"
+    else:
         raise ValueError(f"未対応のアクティビティモードです: mode={mode}, redemption={redemption}")
 
-    unit, gain, value, key = config
     current_units = int(value // unit)
-    detail = {"mode": mode, key: value, "redemption": redemption, "source": key}
-
-    return current_units, gain, unit, key, detail
+    detail = {
+        "mode": mode,               # 入力モード
+        "record_mode": record_mode, # 保存モード（*_rdm を区別）
+        key: value,
+        "unit": unit,
+        "gain": gain,
+        "redemption": redemption,
+        "source": key,              # breakdown 用
+    }
+    return record_mode, current_units, gain, unit, key, detail
 
 
 def calc_sp_for_event(mode: str) -> tuple[int, dict]:
@@ -138,12 +199,13 @@ def add_sp_by_mode(
     redemption: bool,
     db: Session
 ) -> int:
-    today = date.today()
+    today = today_local()
 
     if mode in ("walking", "running"):
-        current_units, gain, unit, key, detail = get_unit_info(mode, redemption, step_count, distance_km)
+        record_mode, current_units, gain, unit, key, detail = get_unit_info(
+            mode, redemption, step_count, distance_km
+        )
         new_sp = current_units * gain
-
         if new_sp <= 0:
             return 0
 
@@ -153,15 +215,17 @@ def add_sp_by_mode(
             return 0
 
         max_addable_sp = min(new_sp, remaining)
-        record = get_sp_record_by_date(user_id, mode, today, db)
+        # ← “保存モード”で1日1レコードに分ける
+        record = get_sp_record_by_date(user_id, week_id, record_mode, today, db)
 
         if record:
             prev_value = record.detail.get(key, 0)
-            prev_units = int(prev_value // unit)
-            new_units = int(detail[key] // unit)
+            prev_unit  = record.detail.get("unit", unit)  # 互換性のため
+            prev_units = int(prev_value // prev_unit)
+            new_units  = int(detail[key] // unit)
 
             unit_diff = new_units - prev_units
-            delta_sp = unit_diff * gain
+            delta_sp  = unit_diff * gain
 
             if unit_diff <= 0 or delta_sp <= 0:
                 return 0
@@ -170,17 +234,15 @@ def add_sp_by_mode(
             update_sp_record(record, record.sp + delta_sp, detail, db)
             return delta_sp
         else:
-            add_sp_record(user_id, week_id, today, max_addable_sp, mode, detail, db)
+            add_sp_record(user_id, week_id, today, max_addable_sp, record_mode, detail, db)
             return max_addable_sp
 
     elif mode in ("wake", "photo"):
-        # 1日1回制限: すでに今日の記録があれば無効
-        existing = get_sp_record_by_date(user_id, mode, today, db)
+        existing = get_sp_record_by_date(user_id, week_id, mode, today, db)
         if existing:
             return 0
 
         new_sp, detail = calc_sp_for_event(mode)
-
         today_total = get_today_sp(user_id, week_id, db)
         remaining = SP_DAY_CAP - today_total
         if remaining <= 0:
@@ -192,12 +254,10 @@ def add_sp_by_mode(
 
     elif mode == "mvp":
         new_sp, detail = calc_sp_for_event(mode)
-
         today_total = get_today_sp(user_id, week_id, db)
         remaining = SP_DAY_CAP - today_total
         if remaining <= 0:
             return 0
-
         max_addable_sp = min(new_sp, remaining)
         add_sp_record(user_id, week_id, today, max_addable_sp, mode, detail, db)
         return max_addable_sp

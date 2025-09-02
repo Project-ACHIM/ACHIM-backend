@@ -13,7 +13,10 @@ from sqlalchemy import (
     ForeignKey,
     UniqueConstraint,
     TIMESTAMP,
-    JSON
+    JSON,
+    Index,
+    BigInteger,
+    Float,
 )
 
 from sqlalchemy.dialects.postgresql import JSONB
@@ -44,5 +47,8 @@ __all__ = [
     "JSONB",
     "relationship",
     "func",
-    "Base"
+    "Base",
+    "Index",
+    "BigInteger",
+    "Float",
 ]
