@@ -24,27 +24,42 @@ def group_weekly_ranking(
 
 
 @router.get("/me", response_model=GroupRankingResponse)
-def my_ranking(user_id: int, db: Session = Depends(get_db)):
-    return get_my_group_ranking(db, user_id)
+def my_ranking(
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user),
+):
+    return get_my_group_ranking(db, current_user.id)
 
 @router.get("/group/{group_id}", response_model=GroupRankingResponse)
-def group_ranking(group_id: int, db: Session = Depends(get_db)):
-    return get_group_ranking(db, group_id)
+def group_ranking(
+    group_id: int,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user),
+):
+    return get_group_ranking_secured(db, viewer_user_id=current_user.id, group_id=group_id)
+
 
 # 最終（MVP込み）
 @router.get("/final/me", response_model=GroupRankingResponse)
-def my_final_ranking(user_id: int, db: Session = Depends(get_db)):
-    return get_my_group_final_ranking(db, user_id)
+def my_final_ranking(
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user),
+):
+    return get_my_group_final_ranking(db, current_user.id)
 
 @router.get("/final/group/{group_id}", response_model=GroupRankingResponse)
-def group_final_ranking(group_id: int, db: Session = Depends(get_db)):
-    return get_group_final_ranking(db, group_id)
+def group_final_ranking(
+    group_id: int,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user),
+):
+    return get_group_final_ranking_secured(db, viewer_user_id=current_user.id, group_id=group_id)
 
 # MVP画面
 @router.get("/mvp/awards", response_model=MVPAwardResponse)
-def mvp_awards(week_id: int, db: Session = Depends(get_db)):
+def mvp_awards(week_id: int, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
     return get_mvp_awards_for_week(db, week_id)
 
 @router.get("/mvp/preview", response_model=MVPCandidatesResponse)
-def mvp_preview(week_id: int, db: Session = Depends(get_db)):
+def mvp_preview(week_id: int, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
     return get_mvp_preview(db, week_id)
