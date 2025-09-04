@@ -8,6 +8,8 @@ class Settings(BaseSettings):
     DATABASE_URL: str
     UPLOAD_DIR: str = "backend/static/uploads"
 
+    BASE_DIR: str = str(Path(__file__).resolve().parent.parent)  
+
     GROUP_MAX_MEMBERS: int = 5
 
     # --- app behavior ---
