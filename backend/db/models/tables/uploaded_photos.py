@@ -1,6 +1,7 @@
 #from sqlalchemy import Date, DateTime, Column, ForeignKey, Integer, String
 from backend.db.models.common import *
-
+from datetime import datetime
+from sqlalchemy import func
 
 class UploadedPhoto(Base):
     __tablename__ = "uploaded_photos"
@@ -11,10 +12,11 @@ class UploadedPhoto(Base):
     
     filename = Column(String, nullable=False)
     url = Column(String, nullable=False)
+    is_demo  = Column(Boolean, default=False, nullable=False)
 
     # 日付単位の管理
-    upload_date = Column(Date, default=DateTime.utcnow().date)       # 1日単位
-    uploaded_at = Column(DateTime, default=DateTime.utcnow)          # 時刻も欲しければ
+    upload_date = Column(Date, server_default=func.current_date())
+    uploaded_at = Column(DateTime, default=datetime.utcnow)
 
     group = relationship("Group", back_populates="photos")
     user = relationship("User", back_populates="photos")

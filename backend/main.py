@@ -17,9 +17,10 @@ from backend.features.rankings import ranking_router
 from backend.features.rankings import history
 from backend.features.users import user_router
 
-from backend.features.photo_event import photo_router, upload_router
+from backend.features.photo_event.photo import photo_router
+from backend.features.photo_event.upload import upload_router
 from backend.features.auth import auth_google  # 使っていれば残す
-
+from backend.features.groups import group_router
 # DB
 from backend.db.base import Base
 from backend.db.session import engine, SessionLocal
@@ -38,6 +39,9 @@ from backend.features.tasks.weekly_tasks import run_weekly_tasks
 from apscheduler.schedulers.background import BackgroundScheduler
 
 from apscheduler.triggers.cron import CronTrigger
+
+from fastapi.staticfiles import StaticFiles
+import os
 
 import logging
 
@@ -144,21 +148,29 @@ app.add_middleware(
 
 
 # ルーター登録
-app.include_router(auth_router.router,    prefix="/auth/mail", tags=["auth:mail"])
+app.include_router(auth_router.router, prefix="/auth", tags=["auth"])
 app.include_router(user_router.router,    prefix="/users",     tags=["users"])
 app.include_router(exchange_router.router, prefix="/tickets",  tags=["tickets"])
 app.include_router(sp_router.router,      prefix="/sp",        tags=["SP"])
 app.include_router(bp_router.router,      prefix="/bp",        tags=["BP"])
 app.include_router(history.router,        prefix="/history",   tags=["history"])
-app.include_router(ranking_router.router, prefix="/groups",    tags=["ranking"])
+app.include_router(ranking_router.router, prefix="/ranking",    tags=["ranking"])
 
-app.include_router(photo_router.router, prefix="/photo",    tags=["photo"])
-app.include_router(upload_router.router, prefix="/photo",    tags=["photo"])
-
-from backend.features.groups import group_service
-app.include_router(group_service.router,  prefix="/groups",    tags=["members"])
+app.include_router(upload_router.router, prefix="/upload", tags=["photo-event"])
+app.include_router(photo_router.router,  prefix="/photo", tags=["photo-event"])
+app.include_router(group_router.router, prefix="/groups", tags=["groups"])
 
 
 
 # 管理者用（開発用）ルーター
 app.include_router(dev_router.router, prefix="/dev", tags=["dev"])
+
+# app = FastAPI(lifespan=lifespan)
+# app.mount(
+#     "/static",
+#     StaticFiles(directory=os.path.join(os.path.dirname(__file__), "static")),
+#     name="static",
+# )
+
+
+

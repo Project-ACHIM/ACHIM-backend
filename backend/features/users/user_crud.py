@@ -30,12 +30,19 @@ def create_user(db: Session, email: str, hashed_password: str) -> User:
         password_hash=hashed_password
     )
 
-    initial_point = Point(bp_total=0, bet_bp_pending=0)
-
     user.auth_providers.append(auth_provider)
-    user.points = initial_point
 
     db.add(user)
+    db.flush()
+
+    initial_point = Point(
+        user_id=user.id,            # 外部キーを直接セット
+        bp_total=10000,
+        bet_bp_pending=0
+    )
+    db.add(initial_point)
+
+    
     db.commit()
     db.refresh(user)
 

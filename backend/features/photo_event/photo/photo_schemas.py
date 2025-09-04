@@ -8,7 +8,7 @@ class UploadedPhotoResponse(BaseModel):
     filename: str
     url: str
     upload_date: date
-    created_at: datetime
+    uploaded_at: datetime
 
     class Config:
         orm_mode = True
