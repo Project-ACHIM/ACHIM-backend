@@ -12,3 +12,8 @@ class Group(Base):
     bp_entries = relationship("BpEntry", back_populates="group")
     members = relationship("GroupMember", back_populates="group")
 
+    photos = relationship(
+        "UploadedPhoto",
+        back_populates="group",
+        cascade="all, delete-orphan",
+    )

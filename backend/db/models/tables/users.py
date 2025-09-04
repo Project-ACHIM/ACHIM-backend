@@ -5,7 +5,7 @@ class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True)
-    name = Column(String(10), nullable=True)
+    name = Column(String(11), nullable=True)
     email = Column(String(255), unique=True, nullable=False)
     password = Column(String(255), nullable=False)
     profile_image = Column(Text)
@@ -28,4 +28,5 @@ class User(Base):
     ranking_results = relationship("RankingResult", back_populates="user", cascade="all, delete-orphan")
     week_preferences = relationship("UserWeekPreference", back_populates="user", cascade="all, delete-orphan")
     region = relationship("Region", back_populates="users")
-
+    photos = relationship("UploadedPhoto", back_populates="user")
+    photo_votes = relationship("PhotoVote", back_populates="voter")
