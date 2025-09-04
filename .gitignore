@@ -51,3 +51,8 @@ docker-compose.override.yml
 logs/*.log
 tmp/*.pid
 tmp/*.pid.lock
+
+# アップロードされた画像は Git 管理から除外
+backend/static/uploads/
+# デモ画像も追加しておく
+backend/static/demo_photos/
