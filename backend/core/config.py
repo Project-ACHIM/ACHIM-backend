@@ -1,5 +1,7 @@
 # backend/core/config.py
 from pydantic_settings import BaseSettings
+from pathlib import Path
+import os
 
 class Settings(BaseSettings):
     # --- infra / IO ---
@@ -19,3 +21,7 @@ class Settings(BaseSettings):
         env_file = ".env"                # ここで .env を読む
 
 settings = Settings()
+
+UPLOAD_DIR = Path(settings.UPLOAD_DIR)
+
+os.makedirs(UPLOAD_DIR, exist_ok=True)
