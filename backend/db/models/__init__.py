@@ -16,3 +16,5 @@ from backend.db.models.tables.bp_entries import BpEntry
 from backend.db.models.tables.user_week_preference import UserWeekPreference
 from backend.db.models.tables.mvp_awards import MVPAward
 from backend.db.models.tables.bp_ingest_cursors import BpIngestCursor
+from backend.db.models.tables.uploaded_photos import UploadedPhoto
+from backend.db.models.tables.photo_votes import PhotoVote
